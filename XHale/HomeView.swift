@@ -1,3 +1,10 @@
+//
+//  HomeView.swift
+//  XHale
+//
+//  Created by NPL-Weng on 3/9/25.
+//
+
 import SwiftUI
 import CoreBluetooth
 
@@ -132,4 +139,3 @@ struct HomeView: View {
         .navigationBarHidden(true)  // Hide default navigation bar
     }
 }
-
