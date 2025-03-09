@@ -22,10 +22,8 @@ The Activities communicate with the Service, which in turn interacts with the [B
 
 Pre-requisites
 --------------
-
-- Android SDK 28
-- Android Build Tools v28.0.3
-- Android Support Repository
+XCode 13
+IOS 19.2
 
 Screenshots
 -------------
