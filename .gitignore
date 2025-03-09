@@ -1,0 +1,13 @@
+# Ignore Xcode build artifacts
+DerivedData/
+*.xcworkspace
+*.xcuserdata
+*.xccheckout
+*.xcscmblueprint
+
+# Swift Package Manager build
+.build/
+
+# Mac system files
+.DS_Store
+# Ignore build artifacts
