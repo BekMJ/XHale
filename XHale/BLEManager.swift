@@ -103,6 +103,11 @@ extension BLEManager: CBCentralManagerDelegate {
     func centralManager(_ central: CBCentralManager,
                         didConnect peripheral: CBPeripheral) {
         print("Connected to \(peripheral.name ?? "Unknown")")
+        
+        // Stop scanning right away
+        isScanning = false
+        centralManager.stopScan()
+        
         connectedPeripheral = peripheral
         peripheral.delegate = self
         // Discover the Environmental Sensing service (or your custom service)
@@ -164,7 +169,7 @@ extension BLEManager: CBPeripheralDelegate {
                 peripheral.readValue(for: characteristic)
             }
         }
-    }
+    }		
     
     func peripheral(_ peripheral: CBPeripheral,
                     didUpdateValueFor characteristic: CBCharacteristic,
@@ -174,6 +179,8 @@ extension BLEManager: CBPeripheralDelegate {
             return
         }
         guard let data = characteristic.value else { return }
+        
+        guard isSampling else { return }
         
         // Parse data based on characteristic
         if characteristic.uuid == temperatureCharUUID {

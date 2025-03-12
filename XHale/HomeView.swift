@@ -23,7 +23,7 @@ struct HomeView: View {
         ZStack(alignment: .leading) {
             
             // 1) The side menu (always present, but usually hidden off-screen)
-            SideMenuView()
+            SideMenuView(isShowingMenu: $isShowingMenu)
                 .frame(width: menuWidth)
                 .offset(x: isShowingMenu ? 0 : -menuWidth) // slide in/out
                 .animation(.easeInOut, value: isShowingMenu)
@@ -118,6 +118,17 @@ struct HomeView: View {
                     if let connectedPeripheral = bleManager.connectedPeripheral {
                         Text("Connected to \(connectedPeripheral.name ?? "Unknown")")
                             .foregroundColor(.white)
+                        
+                        
+
+
+                        // 2) Navigation link to the sensor data
+                        NavigationLink("View Data", destination: SensorDataView())
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .padding()
+                            .background(Color.black.opacity(0.3))
+                            .cornerRadius(8)
                         
                         Button("Disconnect") {
                             bleManager.disconnect()

@@ -3,6 +3,8 @@ import CoreBluetooth
 
 // MARK: - SideMenuView
 struct SideMenuView: View {
+    
+    @Binding var isShowingMenu: Bool
     var body: some View {
         ZStack {
             // Background (could be gradient, solid color, etc.)
@@ -33,6 +35,11 @@ struct SideMenuView: View {
                         .font(.headline)
                         .foregroundColor(.white)
                 }
+                .simultaneousGesture(
+                    TapGesture().onEnded {
+                        isShowingMenu = false
+                    }
+                )
                 
                 // 2) Breath Sample
                 NavigationLink(destination: BreathSampleView()) {
@@ -40,6 +47,27 @@ struct SideMenuView: View {
                         .font(.headline)
                         .foregroundColor(.white)
                 }
+                .simultaneousGesture(
+                    TapGesture().onEnded {
+                        isShowingMenu = false
+                    }
+                )
+               
+                
+                // In SideMenuView or HomeView:
+                NavigationLink(destination: SensorDataView()) {
+                    Label("Dataview", systemImage: "speedometer")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                }
+                .simultaneousGesture(
+                    TapGesture().onEnded {
+                        isShowingMenu = false
+                    }
+                )
+                
+
+
                 
                 Spacer()
             }

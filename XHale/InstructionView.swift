@@ -8,14 +8,6 @@ struct InstructionView: View {
     private let menuWidth: CGFloat = 250
     var body: some View {
         // ZStack so we can layer the menu behind the main content
-        ZStack(alignment: .leading) {
-            
-            // 1) The side menu (always present, but usually hidden off-screen)
-            SideMenuView()
-                .frame(width: menuWidth)
-                .offset(x: isShowingMenu ? 0 : -menuWidth) // slide in/out
-                .animation(.easeInOut, value: isShowingMenu)
-            
             ZStack {
                 // 1) Background gradient
                 LinearGradient(
@@ -30,18 +22,7 @@ struct InstructionView: View {
                 // 2) Main content
                 VStack(spacing: 8) {
                     
-                    HStack {
-                        Button(action: {
-                            // Toggle the menu
-                            isShowingMenu.toggle()
-                        }) {
-                            Image(systemName: "line.horizontal.3")
-                                .font(.system(size: 24))
-                                .foregroundColor(.white)
-                        }
-                        Spacer()
-                    }
-                    .padding()
+                    
                     Text("How to Use the Device")
                         .font(.title)
                         .fontWeight(.bold)
@@ -79,13 +60,12 @@ struct InstructionView: View {
                 .padding()
             }
             .navigationTitle("Instructions")
-        }
-        .navigationBarHidden(false)  // Hide default navigation bar
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarBackground(Color.clear, for: .navigationBar)
+        
     }
 }
 
-struct InstructionView_Previews: PreviewProvider {
-    static var previews: some View {
-        InstructionView()
-    }
-}
+
