@@ -127,6 +127,9 @@ extension BLEManager: CBCentralManagerDelegate {
         if connectedPeripheral == peripheral {
             connectedPeripheral = nil
         }
+        // Also remove it from the discovered list so it doesn't appear again
+           discoveredPeripherals.removeAll { $0.identifier == peripheral.identifier }
+           
     }
 }
 
@@ -210,10 +213,7 @@ extension BLEManager: CBPeripheralDelegate {
 // MARK: - Data Parsing
 private extension BLEManager {
     /// Parses a 2-byte little-endian temperature value in hundredths of a degree.
-    ///
-    /// Equivalent to your Android `convertTemperature()`:
-    ///   int rawTemperature = ((rawData[1] & 0xFF) << 8) | (rawData[0] & 0xFF);
-    ///   return rawTemperature / 100.0f;
+
     func parseTemperature(_ data: Data) -> Double {
         guard data.count >= 2 else { return 0 }
         let rawTemperature = Int((UInt16(data[1]) << 8) | UInt16(data[0]))
@@ -221,10 +221,8 @@ private extension BLEManager {
     }
 
     /// Parses a 2-byte little-endian humidity value in hundredths of a percent.
-    ///
-    /// Equivalent to your Android `convertHumidity()`:
-    ///   int rawHumidity = ((rawData[1] & 0xFF) << 8) | (rawData[0] & 0xFF);
-    ///   return rawHumidity / 100.0f;
+
+
     func parseHumidity(_ data: Data) -> Double {
         guard data.count >= 2 else { return 0 }
         let rawHumidity = Int((UInt16(data[1]) << 8) | UInt16(data[0]))
@@ -232,13 +230,7 @@ private extension BLEManager {
     }
 
     /// Parses a 4-byte little-endian pressure value, then divides by 10.
-    ///
-    /// Equivalent to your Android `convertPressure()`:
-    ///   long rawPressure = ((rawData[3] & 0xFF) << 24)
-    ///                    | ((rawData[2] & 0xFF) << 16)
-    ///                    | ((rawData[1] & 0xFF) << 8)
-    ///                    | (rawData[0] & 0xFF);
-    ///   return rawPressure / 10.0f;
+
     func parsePressure(_ data: Data) -> Double {
         guard data.count >= 4 else { return 0 }
         let rawPressure =
@@ -250,14 +242,6 @@ private extension BLEManager {
     }
 
     /// Parses a 2-byte big-endian CO value, applies slope/intercept, clamps to >= 0, then rounds.
-    ///
-    /// Equivalent to your Android `convertCOConcentration()`:
-    ///   int rawCO = ((rawData[0] & 0xFF) << 8) | (rawData[1] & 0xFF);
-    ///   double slope = 2.21;
-    ///   double intercept = 4.52222222;
-    ///   double calibratedCO = slope * rawCO + intercept;
-    ///   if (calibratedCO < 0) { return 0; }
-    ///   return (int) Math.round(calibratedCO);
     func parseCO(_ data: Data) -> Double {
         guard data.count >= 2 else { return 0 }
         

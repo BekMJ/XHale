@@ -41,19 +41,7 @@ struct SideMenuView: View {
                     }
                 )
                 
-                // 2) Breath Sample
-                NavigationLink(destination: BreathSampleView()) {
-                    Label("Breath Sample", systemImage: "timer")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                }
-                .simultaneousGesture(
-                    TapGesture().onEnded {
-                        isShowingMenu = false
-                    }
-                )
                
-                
                 // In SideMenuView or HomeView:
                 NavigationLink(destination: SensorDataView()) {
                     Label("Dataview", systemImage: "speedometer")
@@ -65,6 +53,18 @@ struct SideMenuView: View {
                         isShowingMenu = false
                     }
                 )
+                
+                NavigationLink(destination: SettingsView()) {
+                    Label("Settings", systemImage: "gearshape")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                }
+                .simultaneousGesture(
+                    TapGesture().onEnded {
+                        isShowingMenu = false
+                    }
+                )
+
                 
 
 

@@ -29,6 +29,16 @@
 		5547DDA02D7B8CF400E561E8 /* XHaleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = XHaleUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		55EB183F2D8F5F94001927E7 /* Exceptions for "Resources" folder in "XHale" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			attributesByRelativePath = {
+				device.dae = ("--decompress", );
+			};
+			target = 5547DD852D7B8CF100E561E8 /* XHale */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		5547DD882D7B8CF100E561E8 /* XHale */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
@@ -43,6 +53,14 @@
 		5547DDA32D7B8CF400E561E8 /* XHaleUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = XHaleUITests;
+			sourceTree = "<group>";
+		};
+		55EB183C2D8F5F13001927E7 /* Resources */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				55EB183F2D8F5F94001927E7 /* Exceptions for "Resources" folder in "XHale" target */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -75,6 +93,7 @@
 		5547DD7D2D7B8CF100E561E8 = {
 			isa = PBXGroup;
 			children = (
+				55EB183C2D8F5F13001927E7 /* Resources */,
 				5547DD882D7B8CF100E561E8 /* XHale */,
 				5547DD992D7B8CF400E561E8 /* XHaleTests */,
 				5547DDA32D7B8CF400E561E8 /* XHaleUITests */,
@@ -109,6 +128,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				5547DD882D7B8CF100E561E8 /* XHale */,
+				55EB183C2D8F5F13001927E7 /* Resources */,
 			);
 			name = XHale;
 			packageProductDependencies = (

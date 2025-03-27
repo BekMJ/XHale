@@ -43,6 +43,14 @@ struct SensorDataView: View {
                     .foregroundColor(.white)
                 }
                 
+                if bleManager.connectedPeripheral != nil {
+                NavigationLink("Take 15‑Second Breath Sample", destination: BreathSampleView())
+                .padding()
+                .background(Color.orange.opacity(0.3))
+                .cornerRadius(8)
+                .foregroundColor(.white)
+                }
+                
                 // MARK: - Show Gauges & Data If displayData == true
                 if displayData {
                     if #available(iOS 16.0, *) {
