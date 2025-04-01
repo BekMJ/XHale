@@ -8,11 +8,9 @@ struct BreathSampleView: View {
     @State private var timeLeft = 15
     @State private var sampleDone = false
     
-    // Toggles for each data type
+    // Toggles for data display
     @State private var showTemperature = true
-    @State private var showHumidity    = true
-    @State private var showPressure    = true
-    @State private var showCO          = true
+    @State private var showCO = true
     
     // Timer reference
     @State private var timer: Timer?
@@ -20,6 +18,9 @@ struct BreathSampleView: View {
     // For CSV export
     @State private var showShareSheet = false
     @State private var csvURL: URL?
+    
+    // State for showing the save alert after sampling
+    @State private var showSaveAlert = false
     
     var body: some View {
         ZStack {
@@ -47,7 +48,7 @@ struct BreathSampleView: View {
                 .foregroundColor(.white)
                 .padding(.horizontal)
                 
-                // If sampling not started or in progress
+                // Sampling state
                 if !sampleDone {
                     if !isSampling {
                         Button("Start 15-Second Sample") {
@@ -64,16 +65,13 @@ struct BreathSampleView: View {
                             .foregroundColor(.white)
                     }
                 } else {
-                    // Once the 15s sample is done, show toggles + chart + export
+                    // Display sample results
                     Text("Sample Finished!")
                         .font(.title3)
                         .foregroundColor(.white)
                     
-                    // Toggles for each data set
                     VStack(alignment: .leading) {
                         Toggle("Show Temperature", isOn: $showTemperature)
-                        Toggle("Show Humidity", isOn: $showHumidity)
-                        Toggle("Show Pressure", isOn: $showPressure)
                         Toggle("Show CO", isOn: $showCO)
                     }
                     .padding()
@@ -82,12 +80,12 @@ struct BreathSampleView: View {
                     .cornerRadius(8)
                     .padding(.horizontal)
                     
-                    // Chart
+                    // Chart for sample data
                     chartView
                         .frame(height: 300)
                         .padding(.horizontal)
                     
-                    // Export CSV button
+                    // CSV Export button
                     Button("Export CSV") {
                         exportCSV()
                     }
@@ -106,18 +104,33 @@ struct BreathSampleView: View {
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbarBackground(Color.clear, for: .navigationBar)
-        // For share sheet
         .sheet(isPresented: $showShareSheet) {
             if let fileURL = csvURL {
                 CSVShareSheet(url: fileURL)
             }
+        }
+        // Alert asking user if they want to save the sample
+        .alert(isPresented: $showSaveAlert) {
+            Alert(
+                title: Text("Save Sample"),
+                message: Text("Do you want to save this 15-second sample?"),
+                primaryButton: .default(Text("Save"), action: {
+                    // Calculate average values and upload to Firestore
+                    if !bleManager.temperatureData.isEmpty, !bleManager.coData.isEmpty {
+                        let avgTemperature = bleManager.temperatureData.reduce(0, +) / Double(bleManager.temperatureData.count)
+                        let avgCO = bleManager.coData.reduce(0, +) / Double(bleManager.coData.count)
+                        bleManager.uploadSensorData(temperature: avgTemperature, co: avgCO)
+                    }
+                }),
+                secondaryButton: .cancel(Text("Don't Save"))
+            )
         }
     }
     
     // MARK: - Sampling Logic
     
     private func startSample() {
-        // Clear old data, set isSampling = true in BLE
+        // Reset states and clear previous data
         timeLeft = 15
         isSampling = true
         sampleDone = false
@@ -138,16 +151,18 @@ struct BreathSampleView: View {
         timer = nil
         
         bleManager.stopSampling()   // sets isSampling = false
-        sampleDone = true           // show toggles, chart, export
+        sampleDone = true           // display toggles, chart, export
+        
+        // Show the alert asking if the user wants to save the sample
+        showSaveAlert = true
     }
     
     // MARK: - Chart
     
     @ViewBuilder
     private var chartView: some View {
-        // Use Swift Charts
         Chart {
-            // Temperature
+            // Temperature data points
             if showTemperature {
                 ForEach(bleManager.temperatureData.indices, id: \.self) { i in
                     PointMark(
@@ -157,27 +172,7 @@ struct BreathSampleView: View {
                     .foregroundStyle(.red)
                 }
             }
-            // Humidity
-            if showHumidity {
-                ForEach(bleManager.humidityData.indices, id: \.self) { i in
-                    PointMark(
-                        x: .value("Index", i),
-                        y: .value("Humidity", bleManager.humidityData[i])
-                    )
-                    .foregroundStyle(.blue)
-                }
-            }
-            // Pressure
-            if showPressure {
-                ForEach(bleManager.pressureData.indices, id: \.self) { i in
-                    PointMark(
-                        x: .value("Index", i),
-                        y: .value("Pressure", bleManager.pressureData[i])
-                    )
-                    .foregroundStyle(.green)
-                }
-            }
-            // CO
+            // CO data points
             if showCO {
                 ForEach(bleManager.coData.indices, id: \.self) { i in
                     PointMark(
@@ -195,24 +190,17 @@ struct BreathSampleView: View {
     // MARK: - CSV Export
     
     private func exportCSV() {
-         // Build CSV from the arrays in BLEManager
          let fileName = "BreathSample.csv"
          let tempDir = FileManager.default.temporaryDirectory
          let fileURL = tempDir.appendingPathComponent(fileName)
          
-         var csvText = "Index,Temperature,Humidity,Pressure,CO\n"
-         let maxCount = max(bleManager.temperatureData.count,
-                            bleManager.humidityData.count,
-                            bleManager.pressureData.count,
-                            bleManager.coData.count)
+         var csvText = "Index,Temperature,CO\n"
+         let maxCount = max(bleManager.temperatureData.count, bleManager.coData.count)
          
          for i in 0..<maxCount {
              let temp = i < bleManager.temperatureData.count ? bleManager.temperatureData[i] : 0
-             let hum  = i < bleManager.humidityData.count    ? bleManager.humidityData[i] : 0
-             let pres = i < bleManager.pressureData.count    ? bleManager.pressureData[i] : 0
-             let co   = i < bleManager.coData.count          ? bleManager.coData[i] : 0
-             
-             csvText += "\(i),\(temp),\(hum),\(pres),\(co)\n"
+             let co   = i < bleManager.coData.count ? bleManager.coData[i] : 0
+             csvText += "\(i),\(temp),\(co)\n"
          }
          
          do {
@@ -223,6 +211,4 @@ struct BreathSampleView: View {
              print("Error writing CSV: \(error)")
          }
      }
- }
-
- // MARK: - CSVShareSheet for exporting
+}

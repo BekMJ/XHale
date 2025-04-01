@@ -12,6 +12,7 @@ import CoreBluetooth
 struct HomeView: View {
     @EnvironmentObject var bleManager: BLEManager
     
+    
     // Controls whether the side menu is visible
     @State private var isShowingMenu = false
     

@@ -8,6 +8,8 @@
 import Foundation
 import CoreBluetooth
 import SwiftUI
+import FirebaseFirestore
+import FirebaseAuth
 
 class BLEManager: NSObject, ObservableObject {
     // MARK: - Published Properties
@@ -76,6 +78,30 @@ class BLEManager: NSObject, ObservableObject {
        func stopSampling() {
            isSampling = false
        }
+    
+    // MARK: - Upload Sensor Data to Firestore
+    func uploadSensorData(temperature: Double, co: Double) {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            print("User not logged in.")
+            return
+        }
+        let db = Firestore.firestore()
+        let data: [String: Any] = [
+            "timestamp": Timestamp(date: Date()),
+            "temperature": temperature,
+            "co": co
+        ]
+        db.collection("users")
+            .document(userId)
+            .collection("sensorData")
+            .addDocument(data: data) { error in
+                if let error = error {
+                    print("Error uploading sensor data: \(error)")
+                } else {
+                    print("Sensor data uploaded successfully.")
+                }
+            }
+    }
 
 }
 
@@ -191,17 +217,20 @@ extension BLEManager: CBPeripheralDelegate {
             DispatchQueue.main.async {
                 self.temperatureData.append(temperature)
             }
-        } else if characteristic.uuid == humidityCharUUID {
+        }
+        /*else if characteristic.uuid == humidityCharUUID {
             let humidity = parseHumidity(data)
             DispatchQueue.main.async {
                 self.humidityData.append(humidity)
             }
-        } else if characteristic.uuid == pressureCharUUID {
+        }
+        else if characteristic.uuid == pressureCharUUID {
             let pressure = parsePressure(data)
             DispatchQueue.main.async {
                 self.pressureData.append(pressure)
             }
-        } else if characteristic.uuid == coCharUUID {
+        } */
+        else if characteristic.uuid == coCharUUID {
             let coValue = parseCO(data)
             DispatchQueue.main.async {
                 self.coData.append(coValue)
@@ -260,5 +289,6 @@ private extension BLEManager {
         // Return the rounded value as a Double
         return Double(Int(round(calibratedCO)))
     }
+
 
 }

@@ -31,7 +31,7 @@ struct InstructionView: View {
                         .shadow(radius: 8)
                     
                     TransparentSceneView()
-                        .frame(width: 300, height: 300)
+                        .frame(width: 350, height: 350)
                     
                     VStack(alignment: .leading, spacing: 8) {
                         Text("• Press the reset button located on the front of the device before starting to scan")
@@ -67,8 +67,8 @@ struct TransparentSceneView: UIViewRepresentable {
         let sceneView = SCNView()
         
         // Load the 3D scene from your device3d.scn file
-        guard let scene = SCNScene(named: "device3d.scn") else {
-            fatalError("Failed to load device3d.scn")
+        guard let scene = SCNScene(named: "rotating.scn") else {
+            fatalError("Failed to load scn")
         }
         sceneView.scene = scene
 
@@ -83,9 +83,9 @@ struct TransparentSceneView: UIViewRepresentable {
         
         // Auto-rotate the model node
         // Adjust the node name ("model") to match your scene's hierarchy.
-        if let modelNode = scene.rootNode.childNode(withName: "model", recursively: true) {
+        if let modelNode = scene.rootNode.childNode(withName: "Cube", recursively: true) {
             let rotationAction = SCNAction.repeatForever(
-                SCNAction.rotateBy(x: 0, y: CGFloat(2 * .pi), z: 0, duration: 10)
+                SCNAction.rotateBy(x: 0, y: 2 * CGFloat.pi, z: 0, duration: 10)
             )
             modelNode.runAction(rotationAction)
         }

@@ -66,7 +66,7 @@ struct SensorDataView: View {
                                 .gaugeStyle(.accessoryCircular)
                                 .tint(.red)
                                 .frame(width: 80, height: 80)
-                                
+                                /*
                                 // 2) Humidity gauge
                                 let hum = bleManager.humidityData.last ?? 0
                                 Gauge(value: hum, in: 0...100) {
@@ -74,11 +74,12 @@ struct SensorDataView: View {
                                 }
                                 .gaugeStyle(.accessoryCircular)
                                 .tint(.blue)
-                                .frame(width: 80, height: 80)
+                                .frame(width: 80, height: 80)*/
                             }
                             
                             // Second row: Pressure + CO
                             HStack(spacing: 30) {
+                                /*
                                 // 3) Pressure gauge
                                 let pres = bleManager.pressureData.last ?? 0
                                 Gauge(value: pres, in: 90000...110000) {
@@ -86,7 +87,7 @@ struct SensorDataView: View {
                                 }
                                 .gaugeStyle(.accessoryCircular)
                                 .tint(.green)
-                                .frame(width: 80, height: 80)
+                                .frame(width: 80, height: 80)*/
                                 
                                 // 4) CO gauge
                                 let coValue = bleManager.coData.last ?? 0
@@ -107,10 +108,11 @@ struct SensorDataView: View {
                     // MARK: - Latest Readings (Text)
                     Text("Temperature: \(latestTemperature, specifier: "%.2f") °C")
                         .foregroundColor(.white)
+                    /*
                     Text("Humidity: \(latestHumidity, specifier: "%.2f") %")
                         .foregroundColor(.white)
                     Text("Pressure: \(latestPressure, specifier: "%.2f") Pa")
-                        .foregroundColor(.white)
+                        .foregroundColor(.white) */
                     Text("CO: \(latestCO, specifier: "%.2f") ppm")
                         .foregroundColor(.white)
                     
@@ -121,6 +123,7 @@ struct SensorDataView: View {
                                 Text("\(value, specifier: "%.2f") °C")
                             }
                         }
+                        /*
                         Section(header: Text("Humidity History")) {
                             ForEach(bleManager.humidityData, id: \.self) { value in
                                 Text("\(value, specifier: "%.2f") %")
@@ -130,7 +133,7 @@ struct SensorDataView: View {
                             ForEach(bleManager.pressureData, id: \.self) { value in
                                 Text("\(value, specifier: "%.2f") Pa")
                             }
-                        }
+                        }*/
                         Section(header: Text("CO History")) {
                             ForEach(bleManager.coData, id: \.self) { value in
                                 Text("\(value, specifier: "%.2f") ppm")
