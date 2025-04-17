@@ -107,6 +107,12 @@ struct HomeView: View {
                                             .font(.subheadline)
                                             .foregroundColor(.green)
                                     }
+                                    // If we have a duration for this device, show it in seconds
+                                    if let seconds = bleManager.connectionDurations[peripheral.identifier] {
+                                        Text("\(Int(seconds))s")
+                                            .font(.subheadline)
+                                            .foregroundColor(.yellow)
+                                    }
                                 }
                             }
                         }

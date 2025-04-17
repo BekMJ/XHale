@@ -17,8 +17,20 @@ class BLEManager: NSObject, ObservableObject {
     @Published var connectedPeripheral: CBPeripheral?
     @Published var isScanning: Bool = false
     
+    /// How long each device has been connected (in seconds).
+    /// How long each device has been connected (in seconds)
+    @Published var connectionDurations: [UUID: TimeInterval] = [:]
+    /// Accumulated time (in seconds) across all sessions for each device
+    private var cumulativeDurations: [UUID: TimeInterval] = [:]
+
+
+    /// Internal start‐time for each connected device
+    private var connectionStartDates: [UUID: Date] = [:]
+    /// Internal repeating timer for each connected device
+    private var connectionTimers: [UUID: Timer] = [:]
+
     // Sensor data arrays
-    @Published var temperatureData: [Double] = []
+    @Published var temperatureData: [Double] = [] 
     @Published var humidityData: [Double] = []
     @Published var pressureData: [Double] = []
     @Published var coData: [Double] = []
@@ -138,6 +150,22 @@ extension BLEManager: CBCentralManagerDelegate {
         peripheral.delegate = self
         // Discover the Environmental Sensing service (or your custom service)
         peripheral.discoverServices([sensorServiceUUID])
+        
+        // —— START PER-DEVICE TIMER ——
+        let id = peripheral.identifier
+        // mark session start
+        connectionStartDates[id] = Date()
+        // invalidate any existing timer
+        connectionTimers[id]?.invalidate()
+        // start a new repeating timer that adds session‑elapsed to the accumulated base
+        connectionTimers[id] = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            guard let self = self,
+                  let start = self.connectionStartDates[id] else { return }
+            // base total (from prior sessions) + this session’s elapsed
+            let base = self.cumulativeDurations[id] ?? 0
+            self.connectionDurations[id] = base + Date().timeIntervalSince(start)
+        }
+
     }
     
     func centralManager(_ central: CBCentralManager,
@@ -155,6 +183,21 @@ extension BLEManager: CBCentralManagerDelegate {
         }
         // Also remove it from the discovered list so it doesn't appear again
            discoveredPeripherals.removeAll { $0.identifier == peripheral.identifier }
+        let id = peripheral.identifier
+        // accumulate this session’s elapsed into the base
+        if let start = connectionStartDates[id] {
+            let base = cumulativeDurations[id] ?? 0
+            let sessionElapsed = Date().timeIntervalSince(start)
+            cumulativeDurations[id] = base + sessionElapsed
+            // immediately reflect the new total
+            connectionDurations[id] = cumulativeDurations[id]
+        }
+        // stop and remove the timer
+        connectionTimers[id]?.invalidate()
+        connectionTimers.removeValue(forKey: id)
+        // clear the start date
+        connectionStartDates.removeValue(forKey: id)
+
            
     }
 }
@@ -270,6 +313,7 @@ private extension BLEManager {
         return Double(rawPressure) / 10.0
     }
 
+
     /// Parses a 2-byte big-endian CO value, applies slope/intercept, clamps to >= 0, then rounds.
     func parseCO(_ data: Data) -> Double {
         guard data.count >= 2 else { return 0 }
@@ -289,6 +333,9 @@ private extension BLEManager {
         // Return the rounded value as a Double
         return Double(Int(round(calibratedCO)))
     }
+
+
+
 
 
 }

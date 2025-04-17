@@ -18,24 +18,17 @@ struct InstructionView: View {
             
             // 2) Main content wrapped in a scroll view
             ScrollView {
-                VStack(spacing: 8) {
+                VStack(spacing: 2) {
                     Text("How to Use the Device")
                         .font(.title)
                         .fontWeight(.bold)
                         .foregroundColor(.white)
-                    
-                    Image("device")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 250, height: 250)
-                        .shadow(radius: 8)
-                    
-                    TransparentSceneView()
+                    TransparentView()
                         .frame(width: 350, height: 350)
                     
                     VStack(alignment: .leading, spacing: 8) {
                         Text("• Press the reset button located on the front of the device before starting to scan")
-                        Text("• The device is named Univ. Okla")
+                        Text("• The Bluetooth device is named XHale")
                         Text("• Keep the device within Bluetooth range.")
                         Text("• Once connected to your phone, you can start receiving the data")
                         Text("• When using the breath sample make sure to breathe deeply into the device for 15 seconds")
@@ -62,37 +55,52 @@ struct InstructionView: View {
 }
 
 
-struct TransparentSceneView: UIViewRepresentable {
+
+struct TransparentView: UIViewRepresentable {
     func makeUIView(context: Context) -> SCNView {
-        let sceneView = SCNView()
+        // Instantiate our custom SCNView.
+        let sceneView = CustomSCNView(frame: .zero)
         
-        // Load the 3D scene from your device3d.scn file
-        guard let scene = SCNScene(named: "rotating.scn") else {
-            fatalError("Failed to load scn")
+        // Load your scene file (e.g., "CO6.scn")
+        guard let scene = SCNScene(named: "CO6.scn") else {
+            fatalError("Failed to load scene 'CO6.scn'")
         }
         sceneView.scene = scene
-
-        // Enable camera control so the user can override the auto rotation
+        
+        // Enable free camera control for user interaction.
         sceneView.allowsCameraControl = true
         
-        // Make the background transparent
+        // Enable default lighting and set background to transparent.
+        sceneView.autoenablesDefaultLighting = true
         sceneView.backgroundColor = .clear
         
-        // Automatically add default lighting
-        sceneView.autoenablesDefaultLighting = true
-        
-        // Auto-rotate the model node
-        // Adjust the node name ("model") to match your scene's hierarchy.
-        if let modelNode = scene.rootNode.childNode(withName: "Cube", recursively: true) {
-            let rotationAction = SCNAction.repeatForever(
-                SCNAction.rotateBy(x: 0, y: 2 * CGFloat.pi, z: 0, duration: 10)
-            )
-            modelNode.runAction(rotationAction)
+        // Configure a custom camera to "zoom in" by positioning it closer.
+        // If the scene doesn't have a camera, create one.
+        if scene.rootNode.childNodes.filter({ $0.camera != nil }).isEmpty {
+            let cameraNode = SCNNode()
+            cameraNode.camera = SCNCamera()
+            // Adjust the camera's fieldOfView as needed.
+            // Option 1: Alter fieldOfView (smaller value = zoomed in).
+            // cameraNode.camera?.fieldOfView = 40
+            // Option 2: Position the camera closer along the z-axis.
+            cameraNode.position = SCNVector3(x: 0, y: 0, z: 5)
+            scene.rootNode.addChildNode(cameraNode)
+            sceneView.pointOfView = cameraNode
+        } else {
+            // If there's an existing camera, adjust its position.
+            if let cameraNode = scene.rootNode.childNodes.first(where: { $0.camera != nil }) {
+                cameraNode.position = SCNVector3(x: 0, y: 0, z: 5)
+                sceneView.pointOfView = cameraNode
+            }
         }
         
         return sceneView
     }
     
-    func updateUIView(_ uiView: SCNView, context: Context) {}
+    func updateUIView(_ uiView: SCNView, context: Context) {
+        // Update the view if needed.
+    }
 }
+
+
 
