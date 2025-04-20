@@ -18,27 +18,40 @@ struct HomeView: View {
         }
         .navigationBarHidden(true)
         .overlay(
-            Group {
-                if tutorial.isActive && tutorial.currentStep.anchorID == nil {
-                    VStack(spacing: 16) {
-                        Text(tutorial.currentStep.title)
-                            .font(.largeTitle)
-                            .foregroundColor(.white)
-                        Text(tutorial.currentStep.message)
-                            .multilineTextAlignment(.center)
-                            .foregroundColor(.white)
-                            .padding()
-                        Button("Next") { tutorial.advance() }
-                            .padding()
-                            .background(Color.blue)
-                            .foregroundColor(.white)
-                            .cornerRadius(8)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color.black.opacity(0.6))
+          Group {
+            if tutorial.isActive && tutorial.currentStep.anchorID == nil {
+              VStack(spacing: 16) {
+                // ← Your popup image
+
+                Text(tutorial.currentStep.title)
+                  .font(.largeTitle)
+                  .foregroundColor(.white)
+
+                Text(tutorial.currentStep.message)
+                  .multilineTextAlignment(.center)
+                  .foregroundColor(.white)
+                  .padding(.horizontal)
+
+                Button("Next") {
+                  tutorial.advance()
                 }
+                .padding()
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(8)
+                  Image("Step1")       // <-- add this
+                    .resizable()                  // make it scale
+                    .scaledToFit()                // keep aspect ratio
+                    .frame(width: 200, height: 200)
+                    .shadow(radius: 10)
+              }
+              .padding() // give some breathing room
+              .frame(maxWidth: .infinity, maxHeight: .infinity)
+              .background(Color.black.opacity(0.6))
             }
+          }
         )
+
     }
 
     // MARK: - Side Menu
@@ -214,6 +227,7 @@ struct HomeView: View {
                     .cornerRadius(8)
                     .foregroundColor(.white)
             }
+            .environmentObject(tutorial)
             .simultaneousGesture(
                 TapGesture().onEnded {
                     if tutorial.isActive && tutorial.currentStep.anchorID == "breathSampleButton" {

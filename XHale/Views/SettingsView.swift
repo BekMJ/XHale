@@ -1,13 +1,17 @@
 import SwiftUI
 import FirebaseAuth
 
+
+
 struct SettingsView: View {
+    
     @AppStorage("enableDarkMode") private var enableDarkMode: Bool = false
     @AppStorage("sampleDuration") private var sampleDuration: Int = 15
     @AppStorage("username") private var username: String = ""
     @AppStorage("tutorialEnabled") private var tutorialEnabled: Bool = true
     
     @EnvironmentObject var tutorial: TutorialManager
+    
     
     @State private var notificationsEnabled: Bool = true
     @State private var shouldNavigateToAuth = false

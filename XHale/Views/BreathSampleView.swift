@@ -3,6 +3,7 @@ import Charts
 
 struct BreathSampleView: View {
     @EnvironmentObject var bleManager: BLEManager
+    @EnvironmentObject var tutorial: TutorialManager
 
     /// Pull this from your Settings stepper (5–60 s)
     @AppStorage("sampleDuration") private var totalTime: Int = 15
@@ -21,6 +22,7 @@ struct BreathSampleView: View {
 
     var body: some View {
         ZStack {
+            // Background gradient
             LinearGradient(
                 gradient: Gradient(colors: [Color.blue, Color.purple]),
                 startPoint: .topLeading,
@@ -33,8 +35,13 @@ struct BreathSampleView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Breath Sample Instructions:")
                         .font(.title3).bold()
-                    Text("• Hold the device in front of your mouth.\n• Blow steadily for \(totalTime) seconds.\n• Keep your phone nearby during sampling.")
-                        .font(.body)
+                    Text("""
+                        • Hold the device in front of your mouth.
+                        • Blow steadily for \(totalTime) seconds.
+                        • Keep your phone nearby during sampling.
+                        """
+                    )
+                    .font(.body)
                 }
                 .padding()
                 .background(Color.black.opacity(0.2))
@@ -47,21 +54,24 @@ struct BreathSampleView: View {
                     if !isSampling {
                         Button("Start \(totalTime)-Second Sample") {
                             startSample()
+                            if tutorial.isActive && tutorial.currentStep.anchorID == "startSampleButton" {
+                                tutorial.advance()
+                            }
                         }
                         .fontWeight(.semibold)
                         .padding()
                         .background(Color.black.opacity(0.3))
                         .cornerRadius(8)
                         .foregroundColor(.white)
+                        .coachMark(
+                            id: "startSampleButton",
+                            title: "Start Sampling",
+                            message: "Tap to begin your 15‑second sample."
+                        )
                     } else {
-                        // compute a 0…1 fraction of time remaining
-                        let fractionRemaining = Double(timeLeft) / Double(totalTime)
-
-                        CircularCountdownView(progress: fractionRemaining,
-                                              timeLeft: timeLeft)
-                        .padding()
-
-
+                        let fraction = Double(timeLeft) / Double(totalTime)
+                        FriendlyCountdownView(progress: fraction, timeLeft: timeLeft)
+                            .padding()
                     }
                 } else {
                     // Results, Toggles, Chart, Export
@@ -85,19 +95,65 @@ struct BreathSampleView: View {
 
                     Button("Export CSV") {
                         exportCSV()
+                        if tutorial.isActive && tutorial.currentStep.anchorID == "exportCSVButton" {
+                            tutorial.advance()
+                        }
                     }
                     .padding()
                     .background(Color.black.opacity(0.3))
                     .cornerRadius(8)
                     .foregroundColor(.white)
+                    .coachMark(
+                        id: "exportCSVButton",
+                        title: "Export Data",
+                        message: "Tap here to export your sample data as CSV."
+                    )
                 }
 
                 Spacer()
             }
             .padding()
         }
+        // Step 5 overlay: Position Device (anchorID nil)
+        .overlay(
+            Group {
+                if tutorial.isActive && tutorial.currentStep.anchorID == nil {
+                    VStack(spacing: 16) {
+                        Image("Step5")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 200, height: 200)
+                            .shadow(radius: 10)
+
+                        Text(tutorial.currentStep.title)
+                            .font(.largeTitle)
+                            .foregroundColor(.white)
+
+                        Text(tutorial.currentStep.message)
+                            .multilineTextAlignment(.center)
+                            .foregroundColor(.white)
+                            .padding(.horizontal)
+
+                        Button("Next") {
+                            tutorial.advance()
+                        }
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                    }
+                    .padding()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.black.opacity(0.6))
+                }
+            }
+        )
         .navigationTitle("\(totalTime)s Breath Sample")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarColorScheme(.dark, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarBackground(Color.clear, for: .navigationBar)
+
         .sheet(isPresented: $showShareSheet) {
             if let url = csvURL {
                 CSVShareSheet(url: url)
@@ -108,11 +164,14 @@ struct BreathSampleView: View {
                 title: Text("Save Sample"),
                 message: Text("Do you want to save this \(totalTime)-second sample?"),
                 primaryButton: .default(Text("Save")) {
-                    let avgTemp = bleManager.temperatureData.reduce(0, +)
-                                  / Double(bleManager.temperatureData.count)
-                    let avgCO   = bleManager.coData.reduce(0, +)
-                                  / Double(bleManager.coData.count)
+                    let avgTemp = bleManager.temperatureData.reduce(0, +) /
+                                  Double(bleManager.temperatureData.count)
+                    let avgCO   = bleManager.coData.reduce(0, +) /
+                                  Double(bleManager.coData.count)
                     bleManager.uploadSensorData(temperature: avgTemp, co: avgCO)
+                    if tutorial.isActive && tutorial.currentStep.anchorID == "saveSampleAction" {
+                        tutorial.advance()
+                    }
                 },
                 secondaryButton: .cancel()
             )
@@ -120,7 +179,7 @@ struct BreathSampleView: View {
         .onDisappear { cleanupTimer() }
     }
 
-    // MARK: Sampling
+    // MARK: - Sampling
 
     private func startSample() {
         timeLeft = totalTime
@@ -147,11 +206,10 @@ struct BreathSampleView: View {
         timer = nil
     }
 
-    // MARK: Chart with Single Domain + Dual Axis Labels
+    // MARK: - Chart
 
     @ViewBuilder
     private var chartView: some View {
-        // 10% headroom on CO and Temp
         let coMax   = (bleManager.coData.max() ?? 0) * 1.1
         let tempMax = (bleManager.temperatureData.max() ?? 0) * 1.1
 
@@ -162,32 +220,25 @@ struct BreathSampleView: View {
                         x: .value("Sample", i),
                         y: .value("CO (ppm)", bleManager.coData[i])
                     )
-                    .foregroundStyle(Color.green)
-                    .symbolSize(100)  // tweak for bigger/smaller dots
+                    .symbolSize(100)
                 }
             }
             if showTemperature {
                 ForEach(bleManager.temperatureData.indices, id: \.self) { i in
-                    // scale temperature into the CO range
                     let temp = bleManager.temperatureData[i]
                     let scaled = (temp / tempMax) * coMax
                     PointMark(
                         x: .value("Sample", i),
                         y: .value("Temp (scaled)", scaled)
                     )
-                    .foregroundStyle(Color.orange)
                     .symbolSize(100)
                 }
             }
         }
-        // use a single numeric domain so both series align
         .chartYScale(domain: 0...coMax)
-
-        // left axis: raw CO
         .chartYAxis {
             AxisMarks(position: .leading) { value in
-                AxisGridLine()
-                AxisTick()
+                AxisGridLine(); AxisTick()
                 AxisValueLabel {
                     if let v = value.as(Double.self) {
                         Text("\(Int(v))")
@@ -195,12 +246,9 @@ struct BreathSampleView: View {
                 }
             }
         }
-
-        // right axis: un‑scale back to Temp °C
         .chartYAxis {
             AxisMarks(position: .trailing) { value in
-                AxisGridLine()
-                AxisTick()
+                AxisGridLine(); AxisTick()
                 AxisValueLabel {
                     if let v = value.as(Double.self) {
                         let t = v / coMax * tempMax
@@ -209,17 +257,14 @@ struct BreathSampleView: View {
                 }
             }
         }
-
         .chartXAxis {
             AxisMarks(position: .bottom) { _ in
-                AxisGridLine()
-                AxisTick()
+                AxisGridLine(); AxisTick()
             }
         }
     }
 
-
-    // MARK: CSV Export
+    // MARK: - CSV Export
 
     private func exportCSV() {
         let fileName = "BreathSample.csv"
@@ -242,5 +287,3 @@ struct BreathSampleView: View {
         }
     }
 }
-
-
