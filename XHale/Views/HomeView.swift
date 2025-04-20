@@ -6,7 +6,6 @@ struct HomeView: View {
     @EnvironmentObject var bleManager: BLEManager
     @EnvironmentObject private var tutorial: TutorialManager
 
-
     @State private var isShowingMenu = false
     private let menuWidth: CGFloat = 250
 
@@ -19,41 +18,27 @@ struct HomeView: View {
         }
         .navigationBarHidden(true)
         .overlay(
-          Group {
-            if tutorial.isActive {
-              // If this step has no anchor, show a full‑screen callout
-              if tutorial.currentStep.anchorID == nil {
-                VStack(spacing: 16) {
-                  Text(tutorial.currentStep.title)
-                    .font(.largeTitle)
-                    .foregroundColor(.white)
-                  Text(tutorial.currentStep.message)
-                    .multilineTextAlignment(.center)
-                    .foregroundColor(.white)
-                    .padding()
-                  Button("Next") { tutorial.advance() }
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
+            Group {
+                if tutorial.isActive && tutorial.currentStep.anchorID == nil {
+                    VStack(spacing: 16) {
+                        Text(tutorial.currentStep.title)
+                            .font(.largeTitle)
+                            .foregroundColor(.white)
+                        Text(tutorial.currentStep.message)
+                            .multilineTextAlignment(.center)
+                            .foregroundColor(.white)
+                            .padding()
+                        Button("Next") { tutorial.advance() }
+                            .padding()
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(8)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.black.opacity(0.6))
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.black.opacity(0.6))
-              } else {
-                // Otherwise just show the Next button in the corner
-                Button("Next") { tutorial.advance() }
-                  .padding()
-                  .background(Color.blue)
-                  .foregroundColor(.white)
-                  .cornerRadius(8)
-                  .padding(.top, 50)
-                  .padding(.trailing, 20)
-                  .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-              }
             }
-          }
         )
-
     }
 
     // MARK: - Side Menu
@@ -97,7 +82,7 @@ struct HomeView: View {
     // MARK: - Header Bar
     private var headerBar: some View {
         HStack {
-            Button(action: { isShowingMenu.toggle() }) {
+            Button { isShowingMenu.toggle() } label: {
                 Image(systemName: "line.horizontal.3")
                     .font(.system(size: 24))
                     .foregroundColor(.white)
@@ -123,10 +108,13 @@ struct HomeView: View {
 
     // MARK: - Scan Button
     private var scanButtonSection: some View {
-        Button(action: {
+        Button {
             if bleManager.isScanning { bleManager.stopScanning() }
             else { bleManager.startScanning() }
-        }) {
+            if tutorial.isActive && tutorial.currentStep.anchorID == "scanButton" {
+                tutorial.advance()
+            }
+        } label: {
             Text(bleManager.isScanning ? "Stop Scan" : "Start Scan")
                 .fontWeight(.semibold)
                 .padding()
@@ -135,14 +123,13 @@ struct HomeView: View {
                 .foregroundColor(.white)
         }
         .coachMark(
-          id: "scanButton",
-          title: "Start Scanning",
-          message: "Tap here to begin scanning for devices."
+            id: "scanButton",
+            title: "Start Scanning",
+            message: "Tap here to begin scanning for devices."
         )
-
     }
 
-    // MARK: - Device List or Placeholder
+    // MARK: - Device List Section
     @ViewBuilder
     private var deviceListSection: some View {
         if bleManager.discoveredPeripherals.isEmpty && !bleManager.isScanning {
@@ -152,67 +139,92 @@ struct HomeView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 16)
         } else {
-            List(bleManager.discoveredPeripherals, id: \.identifier) { peripheral in
-                Button(action: { bleManager.connect(peripheral) }) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text(peripheral.name ?? "Unknown Device")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                            Spacer()
-                            if bleManager.connectedPeripheral == peripheral {
-                                Text("Connected")
-                                    .font(.subheadline)
-                                    .foregroundColor(.green)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: 12) {
+                        ForEach(bleManager.discoveredPeripherals, id: \.identifier) { peripheral in
+                            Button {
+                                bleManager.connect(peripheral)
+                                if tutorial.isActive && tutorial.currentStep.anchorID == "xHaleItem" {
+                                    tutorial.advance()
+                                }
+                            } label: {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack {
+                                        Text(peripheral.name ?? "Unknown Device")
+                                            .font(.headline)
+                                            .foregroundColor(.white)
+                                        Spacer()
+                                        if bleManager.connectedPeripheral == peripheral {
+                                            Text("Connected")
+                                                .font(.subheadline)
+                                                .foregroundColor(.green)
+                                        }
+                                        if let seconds = bleManager.connectionDurations[peripheral.identifier] {
+                                            Text("\(Int(seconds))s")
+                                                .font(.subheadline)
+                                                .foregroundColor(.yellow)
+                                        }
+                                    }
+                                    if bleManager.connectedPeripheral == peripheral {
+                                        HStack(spacing: 16) {
+                                            Text("CO: \(bleManager.coData.last ?? 0.0, specifier: "%.2f") ppm")
+                                            Text("Temp: \(bleManager.temperatureData.last ?? 0.0, specifier: "%.2f") °C")
+                                        }
+                                        .font(.subheadline)
+                                        .foregroundColor(.white)
+                                    }
+                                }
+                                .padding()
+                                .background(Color.black.opacity(0.3))
+                                .cornerRadius(8)
                             }
-                            if let seconds = bleManager.connectionDurations[peripheral.identifier] {
-                                Text("\(Int(seconds))s")
-                                    .font(.subheadline)
-                                    .foregroundColor(.yellow)
-                            }
-                        }
-                        if bleManager.connectedPeripheral == peripheral {
-                            HStack(spacing: 16) {
-                                Text("CO: \(bleManager.coData.last ?? 0.0, specifier: "%.2f") ppm")
-                                Text("Temp: \(bleManager.temperatureData.last ?? 0.0, specifier: "%.2f") °C")
-                            }
-                            .font(.subheadline)
-                            .foregroundColor(.white)
+                            .id(peripheral.identifier)
+                            .coachMark(
+                                id: "xHaleItem",
+                                title: "Choose Your Device",
+                                message: "Tap on \"XHale\" in the list to connect."
+                            )
                         }
                     }
-                    .padding()
-                    .background(Color.black.opacity(0.3))
-                    .cornerRadius(8)
+                    .padding(.horizontal)
                 }
-                .coachMark(
-                  id: "xHaleItem",
-                  title: "Choose Your Device",
-                  message: "Tap on “XHale” in the list to connect."
-                )
+                .onChange(of: tutorial.currentStep.anchorID) { id in
+                    if id == "xHaleItem" {
+                        // Scroll to the first matching XHale peripheral
+                        if let target = bleManager.discoveredPeripherals.first(where: { $0.name == "XHale" }) {
+                            proxy.scrollTo(target.identifier, anchor: .center)
+                        }
+                    }
+                }
             }
-            .listStyle(PlainListStyle())
-            .scrollContentBackground(.hidden)
-            .cornerRadius(8)
         }
     }
-    
 
     // MARK: - Connected Section
     @ViewBuilder
     private var connectedSection: some View {
         if let connected = bleManager.connectedPeripheral {
-            NavigationLink(
-                "Take 15‑Second Breath Sample",
-                destination: BreathSampleView()
+            NavigationLink(destination: BreathSampleView()
+                                .environmentObject(bleManager)
+                                .environmentObject(tutorial)) {
+                Text("Take 15‑Second Breath Sample")
+                    .padding()
+                    .background(Color.orange.opacity(0.3))
+                    .cornerRadius(8)
+                    .foregroundColor(.white)
+            }
+            .simultaneousGesture(
+                TapGesture().onEnded {
+                    if tutorial.isActive && tutorial.currentStep.anchorID == "breathSampleButton" {
+                        tutorial.advance()
+                    }
+                }
             )
-            .padding()
-            .background(Color.orange.opacity(0.3))
-            .cornerRadius(8)
-            .foregroundColor(.white)
             .coachMark(
-              id: "breathSampleButton",
-              title: "Take a Breath Sample",
-              message: "Press here to start your 15‑second sample."
+                id: "breathSampleButton",
+                title: "Take a Breath Sample",
+                message: "Press here to start your 15‑second sample."
             )
 
             Text("Connected to \(connected.name ?? "Unknown")")
