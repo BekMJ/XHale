@@ -3,44 +3,39 @@ import Firebase
 
 @main
 struct XHaleApp: App {
-    init() { FirebaseApp.configure() }
+    // Initialize Firebase
+    init() {
+        FirebaseApp.configure()
+    }
 
+    // Persist whether the inline tutorial (coach marks) should run
     @AppStorage("tutorialEnabled") private var tutorialEnabled = true
+
+    // Shared state objects
     @StateObject private var tutorial       = TutorialManager()
     @StateObject private var networkMonitor = NetworkMonitor()
     @StateObject private var bleManager     = BLEManager()
-    @State private   var anchors: [String: CGRect] = [:]
 
     var body: some Scene {
         WindowGroup {
-            // ① Wrap everything in NavigationView
             NavigationView {
-                ZStack {
-                    // ② This view and all its children can now see bleManager & networkMonitor
-                    AuthView()
-                        .onPreferenceChange(TutorialAnchorKey.self) { anchors = $0 }
-
-                    if tutorialEnabled && tutorial.isActive {
-                        TutorialOverlay(anchors: anchors)
-                            .environmentObject(tutorial)
-                    }
-                }
-                .navigationBarHidden(true)
+                AuthView()
+                    .environmentObject(networkMonitor)
+                    .environmentObject(bleManager)
+                    .environmentObject(tutorial)
             }
-            // ③ Provide your environment objects here
-            .environmentObject(networkMonitor)
-            .environmentObject(bleManager)
             .navigationViewStyle(StackNavigationViewStyle())
             .onAppear {
+                // Reset or disable tutorial based on user setting
+                tutorial.isActive = tutorialEnabled
                 if tutorialEnabled {
                     tutorial.currentIndex = 0
-                    tutorial.isActive     = true
                 }
             }
             .onChange(of: tutorialEnabled) { enabled in
+                tutorial.isActive = enabled
                 if enabled {
                     tutorial.currentIndex = 0
-                    tutorial.isActive     = true
                 }
             }
         }

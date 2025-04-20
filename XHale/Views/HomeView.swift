@@ -4,6 +4,8 @@ import CoreBluetooth
 // MARK: - HomeView
 struct HomeView: View {
     @EnvironmentObject var bleManager: BLEManager
+    @EnvironmentObject private var tutorial: TutorialManager
+
 
     @State private var isShowingMenu = false
     private let menuWidth: CGFloat = 250
@@ -16,6 +18,42 @@ struct HomeView: View {
                 .animation(.easeInOut, value: isShowingMenu)
         }
         .navigationBarHidden(true)
+        .overlay(
+          Group {
+            if tutorial.isActive {
+              // If this step has no anchor, show a full‑screen callout
+              if tutorial.currentStep.anchorID == nil {
+                VStack(spacing: 16) {
+                  Text(tutorial.currentStep.title)
+                    .font(.largeTitle)
+                    .foregroundColor(.white)
+                  Text(tutorial.currentStep.message)
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(.white)
+                    .padding()
+                  Button("Next") { tutorial.advance() }
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.black.opacity(0.6))
+              } else {
+                // Otherwise just show the Next button in the corner
+                Button("Next") { tutorial.advance() }
+                  .padding()
+                  .background(Color.blue)
+                  .foregroundColor(.white)
+                  .cornerRadius(8)
+                  .padding(.top, 50)
+                  .padding(.trailing, 20)
+                  .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+              }
+            }
+          }
+        )
+
     }
 
     // MARK: - Side Menu
@@ -96,7 +134,11 @@ struct HomeView: View {
                 .cornerRadius(8)
                 .foregroundColor(.white)
         }
-        .tutorialAnchor(id: "scanButton")
+        .coachMark(
+          id: "scanButton",
+          title: "Start Scanning",
+          message: "Tap here to begin scanning for devices."
+        )
 
     }
 
@@ -142,13 +184,18 @@ struct HomeView: View {
                     .background(Color.black.opacity(0.3))
                     .cornerRadius(8)
                 }
-                .tutorialAnchorIf(peripheral.name == "XHale" ? "xHaleItem" : nil)
+                .coachMark(
+                  id: "xHaleItem",
+                  title: "Choose Your Device",
+                  message: "Tap on “XHale” in the list to connect."
+                )
             }
             .listStyle(PlainListStyle())
             .scrollContentBackground(.hidden)
             .cornerRadius(8)
         }
     }
+    
 
     // MARK: - Connected Section
     @ViewBuilder
@@ -162,7 +209,11 @@ struct HomeView: View {
             .background(Color.orange.opacity(0.3))
             .cornerRadius(8)
             .foregroundColor(.white)
-            .tutorialAnchor(id: "breathSampleButton")
+            .coachMark(
+              id: "breathSampleButton",
+              title: "Take a Breath Sample",
+              message: "Press here to start your 15‑second sample."
+            )
 
             Text("Connected to \(connected.name ?? "Unknown")")
                 .foregroundColor(.white)
