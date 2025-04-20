@@ -7,6 +7,9 @@ struct AuthView: View {
         case login, register
     }
     
+    // ← Add this
+    @EnvironmentObject var networkMonitor: NetworkMonitor
+    
     @State private var authMode: AuthMode = .login
     @State private var email: String = ""
     @State private var password: String = ""
@@ -28,12 +31,37 @@ struct AuthView: View {
             )
             .edgesIgnoringSafeArea(.all)
             
-            if isLoggedIn || Auth.auth().currentUser != nil {
+            // ← New: offline overlay
+            if !networkMonitor.isConnected {
+                VStack(spacing: 16) {
+                    Image(systemName: "wifi.slash")
+                        .font(.system(size: 60))
+                        .foregroundColor(.white)
+                    Text("No Internet Connection")
+                        .font(.title)
+                        .foregroundColor(.white)
+                        .bold()
+                    Text("Please connect to Wi‑Fi or cellular data to continue.")
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(.white)
+                        .padding(.horizontal)
+                    Button("Retry") {
+                        // NWPathMonitor will re‑fire when connectivity changes
+                    }
+                    .padding()
+                    .background(Color.white.opacity(0.2))
+                    .cornerRadius(8)
+                    .foregroundColor(.white)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .transition(.opacity)
+            }
+            else if isLoggedIn || Auth.auth().currentUser != nil {
                 HomeView()
                     .transition(.move(edge: .trailing).combined(with: .opacity))
             } else {
+                // ← Your existing login/register UI
                 VStack(spacing: 24) {
-                    // Logo (if available)
                     Image("Image")
                         .resizable()
                         .scaledToFit()
@@ -45,7 +73,6 @@ struct AuthView: View {
                         .fontWeight(.bold)
                         .foregroundColor(.white)
                     
-                    // Toggle between Login and Register modes
                     Picker(selection: $authMode, label: Text("Authentication Mode")) {
                         Text("Login").tag(AuthMode.login)
                         Text("Register").tag(AuthMode.register)
@@ -53,50 +80,38 @@ struct AuthView: View {
                     .pickerStyle(SegmentedPickerStyle())
                     .padding(.horizontal, 24)
                     
-                    // Login/Register Card with white background
                     VStack(spacing: 16) {
-                        // Email field with icon
                         HStack {
-                            Image(systemName: "envelope")
-                                .foregroundColor(.gray)
+                            Image(systemName: "envelope").foregroundColor(.gray)
                             TextField("Email", text: $email)
                                 .autocapitalization(.none)
-                                .foregroundColor(.black)  // Dark text for email
+                                .foregroundColor(.black)
                         }
                         .padding()
                         .background(Color.white)
                         .cornerRadius(8)
                         
-                        // Password field with icon
                         HStack {
-                            Image(systemName: "lock")
-                                .foregroundColor(.gray)
+                            Image(systemName: "lock").foregroundColor(.gray)
                             SecureField("Password", text: $password)
-                                .foregroundColor(.black)  // Dark text for password
+                                .foregroundColor(.black)
                         }
                         .padding()
                         .background(Color.white)
                         .cornerRadius(8)
                         
-                        // Remember Password toggle (label in white)
                         Toggle("Remember Password", isOn: $rememberPassword)
                             .padding(.horizontal)
                             .foregroundColor(.white)
                         
-                        // Display error message if available
                         if let errorMessage = errorMessage {
-                            Text(errorMessage)
-                                .foregroundColor(.red)
+                            Text(errorMessage).foregroundColor(.red)
                         }
                         
-                        // Login or Register button
                         Button(action: {
                             withAnimation(.easeInOut(duration: 0.3)) {
-                                if authMode == .login {
-                                    login()
-                                } else {
-                                    register()
-                                }
+                                if authMode == .login { login() }
+                                else { register() }
                             }
                         }) {
                             Text(authMode == .login ? "Login" : "Register")
@@ -116,7 +131,6 @@ struct AuthView: View {
                     .padding(.horizontal, 24)
                     .transition(.move(edge: .leading).combined(with: .opacity))
                     
-                    // Forgot password link
                     Button("Forgot Password?") {
                         // Implement forgot password flow here
                     }
@@ -124,7 +138,6 @@ struct AuthView: View {
                     .font(.footnote)
                 }
                 .onAppear {
-                    // Auto-fill if remember password is enabled
                     if rememberPassword {
                         email = savedEmail
                         password = savedPassword
@@ -132,6 +145,7 @@ struct AuthView: View {
                 }
             }
         }
+        .animation(.easeInOut(duration: 0.3), value: networkMonitor.isConnected)
         .animation(.easeInOut(duration: 0.3), value: isLoggedIn)
     }
     

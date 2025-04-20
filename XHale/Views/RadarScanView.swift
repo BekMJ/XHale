@@ -1,11 +1,13 @@
 import SwiftUI
-import CoreBluetooth
 
 // MARK: - RadarScanView
-/// A radar-like animation with expanding circles emanating from a center icon.
+/// A radar-like animation with expanding circles emanating from a text label.
 struct RadarScanView: View {
     @State private var animateWave = false
     
+    /// The label to display at the center of the waves.
+    var label: String = "Scanning..."
+
     var body: some View {
         ZStack {
             // Wave 1
@@ -19,7 +21,7 @@ struct RadarScanView: View {
                         .repeatForever(autoreverses: false),
                     value: animateWave
                 )
-            
+
             // Wave 2 (delayed start)
             Circle()
                 .stroke(Color.white.opacity(0.5), lineWidth: 2)
@@ -32,10 +34,10 @@ struct RadarScanView: View {
                         .delay(1.0),
                     value: animateWave
                 )
-            
-            // Central icon (white to match the text color)
-            Image(systemName: "dot.radiowaves.right")
-                .font(.system(size: 36))
+
+            // Center label
+            Text(label)
+                .font(.title2)
                 .foregroundColor(.white)
         }
         .onAppear {
@@ -43,4 +45,3 @@ struct RadarScanView: View {
         }
     }
 }
-

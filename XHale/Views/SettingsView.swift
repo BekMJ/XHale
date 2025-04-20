@@ -5,9 +5,13 @@ struct SettingsView: View {
     @AppStorage("enableDarkMode") private var enableDarkMode: Bool = false
     @AppStorage("sampleDuration") private var sampleDuration: Int = 15
     @AppStorage("username") private var username: String = ""
+    @AppStorage("tutorialEnabled") private var tutorialEnabled: Bool = true
+    
+    @EnvironmentObject var tutorial: TutorialManager
     
     @State private var notificationsEnabled: Bool = true
     @State private var shouldNavigateToAuth = false
+    
 
     var body: some View {
         ZStack {
@@ -37,6 +41,16 @@ struct SettingsView: View {
                         isActive: $shouldNavigateToAuth,
                         label: { EmptyView() }
                     )
+                }
+                Section(header: Text("Tutorial")) {
+                    Toggle("Show Tutorial on Launch", isOn: $tutorialEnabled)
+
+                    Button("Run Tutorial Now") {
+                        // reset & start immediately
+                        tutorial.currentIndex = 0
+                        tutorial.isActive = true
+                    }
+                    .disabled(!tutorialEnabled)  // optional: only if they’ve enabled it
                 }
                 
                 // Appearance Section

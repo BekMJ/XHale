@@ -42,12 +42,6 @@ struct SideMenuView: View {
                 )
                 
                
-                // In SideMenuView or HomeView:
-                NavigationLink(destination: SensorDataView()) {
-                    Label("Dataview", systemImage: "speedometer")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                }
                 .simultaneousGesture(
                     TapGesture().onEnded {
                         isShowingMenu = false
