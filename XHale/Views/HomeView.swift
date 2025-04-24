@@ -168,6 +168,12 @@ struct HomeView: View {
                                             .font(.headline)
                                             .foregroundColor(.white)
                                         Spacer()
+                                        if let sn = bleManager.deviceSerial {
+                                          Text((sn))
+                                            .font(.subheadline)
+                                            .foregroundColor(.white)
+                                        }
+
                                         if bleManager.connectedPeripheral == peripheral {
                                             Text("Connected")
                                                 .font(.subheadline)

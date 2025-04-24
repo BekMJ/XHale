@@ -1,10 +1,3 @@
-//
-//  BLEManager.swift
-//  XHale
-//
-//  Created by YourName on Date.
-//
-
 import Foundation
 import CoreBluetooth
 import SwiftUI
@@ -17,40 +10,34 @@ class BLEManager: NSObject, ObservableObject {
     @Published var connectedPeripheral: CBPeripheral?
     @Published var isScanning: Bool = false
 
-    /// How long each device has been connected (in seconds), updated live
+    /// How long each device has been connected
     @Published var connectionDurations: [UUID: TimeInterval] = [:]
 
     // MARK: - Timing Storage
-    /// Accumulated time (in seconds) across all sessions for each device
     private var cumulativeDurations: [UUID: TimeInterval] = [:]
-    /// Start‑time for each current session
     private var connectionStartDates: [UUID: Date] = [:]
-    /// Active Timer instances for each device
     private var connectionTimers: [UUID: Timer] = [:]
 
     // MARK: - Sensor Data Arrays
     @Published var temperatureData: [Double] = []
-    @Published var humidityData: [Double] = []
-    @Published var pressureData: [Double] = []
     @Published var coData: [Double] = []
     @Published var deviceSerial: String?
 
     var isSampling = false
+    @Published var coTimestamps: [Date] = []
+    @Published var temperatureTimestamps: [Date] = []
 
-    // MARK: - BLE UUIDs
+    // MARK: - BLE UUIDs & Characteristics
     private var centralManager: CBCentralManager!
     private let sensorServiceUUID   = CBUUID(string: "0000181a-0000-1000-8000-00805f9b34fb")
     private let temperatureCharUUID = CBUUID(string: "00002a6e-0000-1000-8000-00805f9b34fb")
-    private let humidityCharUUID    = CBUUID(string: "00002a6f-0000-1000-8000-00805f9b34fb")
-    private let pressureCharUUID    = CBUUID(string: "00002a6d-0000-1000-8000-00805f9b34fb")
     private let coCharUUID          = CBUUID(string: "00002bd0-0000-1000-8000-00805f9b34fb")
-    // in BLEManager class, alongside your other UUIDs:
     private let disServiceUUID       = CBUUID(string: "180A")
     private let serialNumberCharUUID = CBUUID(string: "2A25")
 
-    // Add:
-
-
+    // Hold references to characteristics for reading
+    private var temperatureCharacteristic: CBCharacteristic?
+    private var coCharacteristic: CBCharacteristic?
 
     override init() {
         super.init()
@@ -69,7 +56,7 @@ class BLEManager: NSObject, ObservableObject {
         centralManager.stopScan()
     }
 
-    // MARK: - Connect / Disconnect
+    // MARK: - Connection
     func connect(_ peripheral: CBPeripheral) {
         centralManager.connect(peripheral, options: nil)
     }
@@ -79,18 +66,18 @@ class BLEManager: NSObject, ObservableObject {
         }
     }
 
-    // MARK: - Sampling Control
+    // MARK: - Sampling
     func startSampling() {
         temperatureData.removeAll()
-        humidityData.removeAll()
-        pressureData.removeAll()
         coData.removeAll()
+        temperatureTimestamps.removeAll()    // ← clear old temps
+        coTimestamps.removeAll()             // ← clear old COs
         isSampling = true
     }
     func stopSampling() {
         isSampling = false
     }
-
+    
     // MARK: - Firestore Helpers
     private func timerDocRef(for id: UUID) -> DocumentReference? {
         guard let uid = Auth.auth().currentUser?.uid else { return nil }
@@ -101,7 +88,7 @@ class BLEManager: NSObject, ObservableObject {
             .document(id.uuidString)
     }
 
-    // MARK: - Firestore Upload for Sensor Data
+    // MARK: - Firestore Upload
     func uploadSensorData(temperature: Double, co: Double) {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         let doc = Firestore.firestore()
@@ -125,7 +112,6 @@ class BLEManager: NSObject, ObservableObject {
 // MARK: - CBCentralManagerDelegate
 extension BLEManager: CBCentralManagerDelegate {
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
-        // Handle other states if needed
         guard central.state == .poweredOn else {
             isScanning = false
             return
@@ -194,15 +180,17 @@ extension BLEManager: CBCentralManagerDelegate {
     func centralManager(_ central: CBCentralManager,
                         didFailToConnect peripheral: CBPeripheral,
                         error: Error?) {
-        print("Failed to connect:", error?.localizedDescription ?? "unknown")
+        print("Failed to connect: \(error?.localizedDescription ?? "unknown")")
     }
 
     func centralManager(_ central: CBCentralManager,
                         didDisconnectPeripheral peripheral: CBPeripheral,
                         error: Error?) {
         if connectedPeripheral == peripheral {
+            deviceSerial = nil   // ← clear it here
             connectedPeripheral = nil
         }
+        
         discoveredPeripherals.removeAll { $0.identifier == peripheral.identifier }
 
         let id = peripheral.identifier
@@ -236,63 +224,85 @@ extension BLEManager: CBPeripheralDelegate {
         for service in peripheral.services ?? [] {
             switch service.uuid {
             case sensorServiceUUID:
-                peripheral.discoverCharacteristics(
-                    [temperatureCharUUID,
-                     humidityCharUUID,
-                     pressureCharUUID,
-                     coCharUUID],
-                    for: service
-                )
+                peripheral.discoverCharacteristics([
+                    temperatureCharUUID,
+                    coCharUUID
+                ], for: service)
+
             case disServiceUUID:
                 peripheral.discoverCharacteristics([serialNumberCharUUID], for: service)
+
             default:
                 break
             }
         }
     }
 
-
     func peripheral(_ peripheral: CBPeripheral,
                     didDiscoverCharacteristicsFor service: CBService,
                     error: Error?) {
-        guard error == nil else { return }
-        for char in service.characteristics ?? [] {
-            if service.uuid == disServiceUUID && char.uuid == serialNumberCharUUID {
-                peripheral.readValue(for: char)
-            }
-            else if service.uuid == sensorServiceUUID {
-                if char.properties.contains(.notify) || char.properties.contains(.indicate){
-                    peripheral.setNotifyValue(true, for: char)
-                }
-                if char.properties.contains(.read) {
-                    peripheral.readValue(for: char)
-                }
-            }
+      guard error == nil else { return }
+      for char in service.characteristics ?? [] {
+        switch char.uuid {
+        case coCharUUID where char.properties.contains(.notify):
+          coCharacteristic = char
+          peripheral.setNotifyValue(true, for: char)
+
+        case temperatureCharUUID where char.properties.contains(.notify):
+          temperatureCharacteristic = char
+          peripheral.setNotifyValue(true, for: char)
+
+        case serialNumberCharUUID where service.uuid == disServiceUUID:
+          peripheral.readValue(for: char)
+
+        default:
+          break
         }
+      }
     }
 
 
     func peripheral(_ peripheral: CBPeripheral,
                     didUpdateValueFor characteristic: CBCharacteristic,
                     error: Error?) {
-        guard error == nil, let data = characteristic.value, isSampling else { return }
-        switch characteristic.uuid {
-            
-        case serialNumberCharUUID:
-            if let s = String(data: data, encoding: .utf8) {
-                DispatchQueue.main.async { self.deviceSerial = s }
-                print("Device serial is: \(s)")
-            }
-        case temperatureCharUUID:
-            let t = parseTemperature(data)
-            DispatchQueue.main.async { self.temperatureData.append(t) }
-        case coCharUUID:
-            let c = parseCO(data)
-            DispatchQueue.main.async { self.coData.append(c) }
-        default:
-            break
+        
+        
+      guard error == nil, let data = characteristic.value, isSampling else { return }
+    
+        if characteristic.uuid == serialNumberCharUUID {
+          // DEBUG: print raw data and string
+          print(" Did read serial raw:", data as NSData)
+          let sn = String(data: data, encoding: .utf8) ?? "<bad-utf8>"
+          print(" Parsed serial:", sn)
+          DispatchQueue.main.async {
+            self.deviceSerial = sn
+          }
+          return
         }
+        guard isSampling else { return }
+
+
+      switch characteristic.uuid {
+      case coCharUUID:
+        let c = parseCO(data)
+          DispatchQueue.main.async {
+              self.coData.append(c)
+              self.coTimestamps.append(Date())     // ← record when CO arrived
+          }
+
+      case temperatureCharUUID:
+        let t = parseTemperature(data)
+          DispatchQueue.main.async {
+              self.temperatureData.append(t)
+              self.temperatureTimestamps.append(Date())
+          }
+
+
+      default:
+        break
+      }
     }
+
 }
 
 // MARK: - Data Parsing Helpers
@@ -303,25 +313,9 @@ private extension BLEManager {
         return Double(raw) / 100.0
     }
 
-    func parseHumidity(_ data: Data) -> Double {
-        guard data.count >= 2 else { return 0 }
-        let raw = Int((UInt16(data[1]) << 8) | UInt16(data[0]))
-        return Double(raw) / 100.0
-    }
-
-    func parsePressure(_ data: Data) -> Double {
-        guard data.count >= 4 else { return 0 }
-        let raw = (UInt32(data[3]) << 24) |
-                  (UInt32(data[2]) << 16) |
-                  (UInt32(data[1]) << 8)  |
-                   UInt32(data[0])
-        return Double(raw) / 10.0
-    }
-
     func parseCO(_ data: Data) -> Double {
         guard data.count >= 2 else { return 0 }
         let rawCO = Int((UInt16(data[0]) << 8) | UInt16(data[1]))
-
         return Double(rawCO)
     }
 }
