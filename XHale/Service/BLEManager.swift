@@ -38,6 +38,8 @@ class BLEManager: NSObject, ObservableObject {
     // Hold references to characteristics for reading
     private var temperatureCharacteristic: CBCharacteristic?
     private var coCharacteristic: CBCharacteristic?
+    private var timerListeners: [UUID: ListenerRegistration] = [:]
+
 
     override init() {
         super.init()
@@ -134,11 +136,10 @@ extension BLEManager: CBCentralManagerDelegate {
         peripheral.discoverServices([sensorServiceUUID, disServiceUUID])
         self.startSampling()
 
-
         let id = peripheral.identifier
         // Firestore: listen for updates
         if let doc = timerDocRef(for: id) {
-            doc.addSnapshotListener { [weak self] snapshot, _ in
+            let registration = doc.addSnapshotListener { [weak self] snapshot, _ in
                 guard let data = snapshot?.data(), let self = self else { return }
                 // Sync cumulative base
                 self.cumulativeDurations[id] = data["cumulativeDuration"] as? TimeInterval ?? 0
@@ -154,6 +155,7 @@ extension BLEManager: CBCentralManagerDelegate {
                     self.connectionDurations[id] = base + Date().timeIntervalSince(start)
                 }
             }
+            timerListeners[id] = registration
             // Ensure startTime exists in Firestore
             doc.getDocument { [weak self] snap, _ in
                 guard let self = self else { return }
@@ -186,6 +188,14 @@ extension BLEManager: CBCentralManagerDelegate {
     func centralManager(_ central: CBCentralManager,
                         didDisconnectPeripheral peripheral: CBPeripheral,
                         error: Error?) {
+        
+        let id = peripheral.identifier
+
+        // ① remove Firestore listener
+        if let registration = timerListeners[id] {
+          registration.remove()
+          timerListeners.removeValue(forKey: id)
+        }
         if connectedPeripheral == peripheral {
             deviceSerial = nil   // ← clear it here
             connectedPeripheral = nil
@@ -193,7 +203,6 @@ extension BLEManager: CBCentralManagerDelegate {
         
         discoveredPeripherals.removeAll { $0.identifier == peripheral.identifier }
 
-        let id = peripheral.identifier
         // Accumulate session
         if let start = connectionStartDates[id] {
             let base = cumulativeDurations[id] ?? 0
@@ -267,19 +276,14 @@ extension BLEManager: CBPeripheralDelegate {
                     error: Error?) {
         
         
-      guard error == nil, let data = characteristic.value, isSampling else { return }
+        guard error == nil, let data = characteristic.value else { return }
     
+        // ① Always handle serial-number reads
         if characteristic.uuid == serialNumberCharUUID {
-          // DEBUG: print raw data and string
-          print(" Did read serial raw:", data as NSData)
           let sn = String(data: data, encoding: .utf8) ?? "<bad-utf8>"
-          print(" Parsed serial:", sn)
-          DispatchQueue.main.async {
-            self.deviceSerial = sn
-          }
+          DispatchQueue.main.async { self.deviceSerial = sn }
           return
         }
-        guard isSampling else { return }
 
 
       switch characteristic.uuid {
