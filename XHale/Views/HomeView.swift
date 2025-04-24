@@ -173,17 +173,21 @@ struct HomeView: View {
                                             .font(.subheadline)
                                             .foregroundColor(.white)
                                         }
-
+                                        if let mac = bleManager.peripheralMACs[peripheral.identifier] {
+                                          Text(mac)
+                                            .font(.subheadline)
+                                            .foregroundColor(.gray)
+                                        }
                                         if bleManager.connectedPeripheral == peripheral {
                                             Text("Connected")
                                                 .font(.subheadline)
                                                 .foregroundColor(.green)
                                         }
-                                        if let seconds = bleManager.connectionDurations[peripheral.identifier] {
-                                            Text("\(Int(seconds))s")
-                                                .font(.subheadline)
-                                                .foregroundColor(.yellow)
+                                        if let mac = bleManager.peripheralMACs[peripheral.identifier],
+                                           let seconds = bleManager.connectionDurationsByMAC[mac] {
+                                          Text("\(Int(seconds))s")
                                         }
+
                                     }
                                     if bleManager.connectedPeripheral == peripheral {
                                         HStack(spacing: 16) {

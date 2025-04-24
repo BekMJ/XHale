@@ -209,7 +209,26 @@ struct BreathSampleView: View {
                                   Double(bleManager.temperatureData.count)
                     let avgCO   = bleManager.coData.reduce(0, +) /
                                   Double(bleManager.coData.count)
-                    bleManager.uploadSensorData(temperature: avgTemp, co: avgCO)
+                    
+                           if let connected = bleManager.connectedPeripheral,
+                              let mac = bleManager.peripheralMACs[connected.identifier] {
+                               bleManager.uploadSensorData(
+                                 mac: mac,
+                                 temperature: avgTemp,
+                                 co: avgCO
+                               )
+                           } else {
+                               print("⚠️ No MAC found; uploading without MAC")
+                               // optional fallback:
+                               bleManager.uploadSensorData(
+                                 mac: "<unknown>",
+                                 temperature: avgTemp,
+                                 co: avgCO
+                               )
+                           }
+
+                    
+                    
                     if tutorial.isActive && tutorial.currentStep.anchorID == "saveSampleAction" {
                         tutorial.advance()
                     }

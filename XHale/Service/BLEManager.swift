@@ -13,10 +13,6 @@ class BLEManager: NSObject, ObservableObject {
     /// How long each device has been connected
     @Published var connectionDurations: [UUID: TimeInterval] = [:]
 
-    // MARK: - Timing Storage
-    private var cumulativeDurations: [UUID: TimeInterval] = [:]
-    private var connectionStartDates: [UUID: Date] = [:]
-    private var connectionTimers: [UUID: Timer] = [:]
 
     // MARK: - Sensor Data Arrays
     @Published var temperatureData: [Double] = []
@@ -26,6 +22,8 @@ class BLEManager: NSObject, ObservableObject {
     var isSampling = false
     @Published var coTimestamps: [Date] = []
     @Published var temperatureTimestamps: [Date] = []
+    @Published var peripheralMACs: [UUID:String] = [:]
+
 
     // MARK: - BLE UUIDs & Characteristics
     private var centralManager: CBCentralManager!
@@ -38,7 +36,15 @@ class BLEManager: NSObject, ObservableObject {
     // Hold references to characteristics for reading
     private var temperatureCharacteristic: CBCharacteristic?
     private var coCharacteristic: CBCharacteristic?
-    private var timerListeners: [UUID: ListenerRegistration] = [:]
+
+    
+    // MARK: – MAC-keyed timing storage
+    private var connectionStartDatesByMAC: [String: Date] = [:]
+    private var connectionTimersByMAC:     [String: Timer] = [:]
+    @Published var connectionDurationsByMAC: [String: TimeInterval] = [:]
+    private var timerListenersByMAC: [String: ListenerRegistration] = [:]
+    private var cumulativeDurationsByMAC:  [String: TimeInterval] = [:]
+
 
 
     override init() {
@@ -80,35 +86,42 @@ class BLEManager: NSObject, ObservableObject {
         isSampling = false
     }
     
-    // MARK: - Firestore Helpers
-    private func timerDocRef(for id: UUID) -> DocumentReference? {
+    private func timerDocRef(forMAC mac: String) -> DocumentReference? {
         guard let uid = Auth.auth().currentUser?.uid else { return nil }
         return Firestore.firestore()
             .collection("users")
             .document(uid)
             .collection("deviceTimers")
-            .document(id.uuidString)
+            .document(mac)
     }
 
+
     // MARK: - Firestore Upload
-    func uploadSensorData(temperature: Double, co: Double) {
+    /// Uploads one temperature+CO reading, tagged by device MAC.
+    /// Upload one temperature+CO reading into a per-MAC “readings” subcollection.
+    func uploadSensorData(mac: String, temperature: Double, co: Double) {
         guard let uid = Auth.auth().currentUser?.uid else { return }
-        let doc = Firestore.firestore()
+
+        // 1) Reference the “readings” subcollection under the MAC‐named doc
+        let readingsRef = Firestore.firestore()
             .collection("users")
             .document(uid)
             .collection("sensorData")
-            .document()
-        let data: [String: Any] = [
+            .document(mac)               // one document per device
+            .collection("readings")      // subcollection for all readings
+
+        // 2) Auto-ID a new document for this single reading
+        readingsRef.addDocument(data: [
             "timestamp": Timestamp(date: Date()),
             "temperature": temperature,
             "co": co
-        ]
-        doc.setData(data) { error in
+        ]) { error in
             if let e = error {
-                print("Error uploading sensor data: \(e)")
+                print("Error uploading sensor data for \(mac):", e)
             }
         }
     }
+
 }
 
 // MARK: - CBCentralManagerDelegate
@@ -127,57 +140,101 @@ extension BLEManager: CBCentralManagerDelegate {
         if !discoveredPeripherals.contains(peripheral) {
             discoveredPeripherals.append(peripheral)
         }
+        
+        // 2) extract 6-byte MAC from manufacturer data
+        if let mfgData = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data,
+           mfgData.count >= 8
+        {
+          // company ID in bytes 0–1, MAC in bytes 2–7
+          let macBytes = mfgData.subdata(in: 2..<8)
+          let macString = macBytes
+            .map { String(format: "%02X", $0) }
+            .joined(separator: ":")
+          DispatchQueue.main.async {
+            self.peripheralMACs[peripheral.identifier] = macString
+          }
+        }
     }
+    // MARK: - CBCentralManagerDelegate
 
     func centralManager(_ central: CBCentralManager,
                         didConnect peripheral: CBPeripheral) {
+        // Stop scanning once we’ve connected
+        stopScanning()
+
+        // Keep track of our connected peripheral
         connectedPeripheral = peripheral
         peripheral.delegate = self
         peripheral.discoverServices([sensorServiceUUID, disServiceUUID])
-        self.startSampling()
 
-        let id = peripheral.identifier
-        // Firestore: listen for updates
-        if let doc = timerDocRef(for: id) {
+        // Kick off live sampling immediately
+        startSampling()
+
+        // 1) Look up the MAC address we stored during discovery
+        let uuid = peripheral.identifier
+        guard let mac = peripheralMACs[uuid] else {
+            print("⚠️  No MAC found for peripheral \(uuid)")
+            return
+        }
+
+        // 2) ——— Firestore: listen for cumulative-duration updates ———
+        if let doc = timerDocRef(forMAC: mac) {
+            // Remove any old listener first
+            timerListenersByMAC[mac]?.remove()
+
             let registration = doc.addSnapshotListener { [weak self] snapshot, _ in
-                guard let data = snapshot?.data(), let self = self else { return }
+                guard let self = self,
+                      let data = snapshot?.data() else { return }
+
                 // Sync cumulative base
-                self.cumulativeDurations[id] = data["cumulativeDuration"] as? TimeInterval ?? 0
-                // Sync startTime if exists, else mark now
+                self.cumulativeDurationsByMAC[mac] = data["cumulativeDuration"] as? TimeInterval ?? 0
+
+                // Sync or initialize startTime
                 if let ts = data["startTime"] as? Timestamp {
-                    self.connectionStartDates[id] = ts.dateValue()
+                    self.connectionStartDatesByMAC[mac] = ts.dateValue()
                 } else {
-                    self.connectionStartDates[id] = Date()
+                    self.connectionStartDatesByMAC[mac] = Date()
                 }
+
                 // Update published duration
-                if let start = self.connectionStartDates[id] {
-                    let base = self.cumulativeDurations[id] ?? 0
-                    self.connectionDurations[id] = base + Date().timeIntervalSince(start)
+                if let start = self.connectionStartDatesByMAC[mac] {
+                    let base = self.cumulativeDurationsByMAC[mac] ?? 0
+                    DispatchQueue.main.async {
+                        self.connectionDurationsByMAC[mac] = base + Date().timeIntervalSince(start)
+                    }
                 }
             }
-            timerListeners[id] = registration
-            // Ensure startTime exists in Firestore
+
+            // Store the listener so we can remove it on disconnect
+            timerListenersByMAC[mac] = registration
+
+            // Ensure a startTime exists in Firestore
             doc.getDocument { [weak self] snap, _ in
-                guard let self = self else { return }
-                if snap?.data()?["startTime"] == nil {
-                    let base = self.cumulativeDurations[id] ?? 0
-                    doc.setData([
-                        "cumulativeDuration": base,
-                        "startTime": FieldValue.serverTimestamp()
-                    ], merge: true)
-                }
+                guard let self = self,
+                      snap?.data()?["startTime"] == nil else { return }
+                let base = self.cumulativeDurationsByMAC[mac] ?? 0
+                doc.setData([
+                    "cumulativeDuration": base,
+                    "startTime": FieldValue.serverTimestamp()
+                ], merge: true)
             }
         }
 
-        // Local timer
-        connectionStartDates[id] = Date()
-        connectionTimers[id]?.invalidate()
-        connectionTimers[id] = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self = self, let start = self.connectionStartDates[id] else { return }
-            let base = self.cumulativeDurations[id] ?? 0
-            self.connectionDurations[id] = base + Date().timeIntervalSince(start)
+        // 3) ——— Local timer fallback keyed by MAC ———
+        connectionStartDatesByMAC[mac] = Date()
+        connectionTimersByMAC[mac]?.invalidate()
+        connectionTimersByMAC[mac] = Timer.scheduledTimer(withTimeInterval: 1.0,
+                                                          repeats: true) { [weak self] _ in
+            guard let self = self,
+                  let start = self.connectionStartDatesByMAC[mac] else { return }
+            let base = self.cumulativeDurationsByMAC[mac] ?? 0
+            DispatchQueue.main.async {
+                self.connectionDurationsByMAC[mac] = base + Date().timeIntervalSince(start)
+            }
         }
     }
+
+
 
     func centralManager(_ central: CBCentralManager,
                         didFailToConnect peripheral: CBPeripheral,
@@ -188,42 +245,53 @@ extension BLEManager: CBCentralManagerDelegate {
     func centralManager(_ central: CBCentralManager,
                         didDisconnectPeripheral peripheral: CBPeripheral,
                         error: Error?) {
-        
-        let id = peripheral.identifier
-
-        // ① remove Firestore listener
-        if let registration = timerListeners[id] {
-          registration.remove()
-          timerListeners.removeValue(forKey: id)
+        // 1) Look up the MAC address we stored during discovery
+        let uuid = peripheral.identifier
+        guard let mac = peripheralMACs[uuid] else {
+            print("⚠️  No MAC found for peripheral \(uuid)")
+            return
         }
+
+        // 2) ——— Remove Firestore listener keyed by MAC ———
+        if let registration = timerListenersByMAC[mac] {
+            registration.remove()
+            timerListenersByMAC.removeValue(forKey: mac)
+        }
+
+        // 3) Clear connection state
         if connectedPeripheral == peripheral {
-            deviceSerial = nil   // ← clear it here
+            deviceSerial = nil
             connectedPeripheral = nil
         }
-        
-        discoveredPeripherals.removeAll { $0.identifier == peripheral.identifier }
 
-        // Accumulate session
-        if let start = connectionStartDates[id] {
-            let base = cumulativeDurations[id] ?? 0
+        // 4) Remove from discovered list
+        discoveredPeripherals.removeAll { $0.identifier == uuid }
+
+        // 5) Accumulate this session locally (MAC‐keyed)
+        if let start = connectionStartDatesByMAC[mac] {
+            let base    = cumulativeDurationsByMAC[mac] ?? 0
             let session = Date().timeIntervalSince(start)
-            let total = base + session
-            cumulativeDurations[id] = total
-            connectionDurations[id] = total
+            let total   = base + session
+            cumulativeDurationsByMAC[mac]   = total
+            connectionDurationsByMAC[mac]   = total
         }
-        // Firestore: write back and clear
-        if let doc = timerDocRef(for: id) {
-            let total = cumulativeDurations[id] ?? 0
+
+        // 6) Persist the final cumulativeDuration and clear startTime in Firestore
+        if let doc = timerDocRef(forMAC: mac) {
+            let total = cumulativeDurationsByMAC[mac] ?? 0
             doc.updateData([
                 "cumulativeDuration": total,
                 "startTime": FieldValue.delete()
             ])
         }
-        // Cleanup timers
-        connectionTimers[id]?.invalidate()
-        connectionTimers.removeValue(forKey: id)
-        connectionStartDates.removeValue(forKey: id)
+
+        // 7) Cleanup local timers keyed by MAC
+        connectionTimersByMAC[mac]?.invalidate()
+        connectionTimersByMAC.removeValue(forKey: mac)
+        connectionStartDatesByMAC.removeValue(forKey: mac)
     }
+
+
 }
 
 // MARK: - CBPeripheralDelegate

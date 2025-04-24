@@ -20,10 +20,11 @@ struct XHaleApp: App {
         WindowGroup {
             NavigationView {
                 AuthView()
-                    .environmentObject(networkMonitor)
-                    .environmentObject(bleManager)
-                    .environmentObject(tutorial)
+
             }
+            .environmentObject(networkMonitor)
+            .environmentObject(bleManager)
+            .environmentObject(tutorial)
             .navigationViewStyle(StackNavigationViewStyle())
             .onAppear {
                 // Reset or disable tutorial based on user setting
