@@ -4,10 +4,35 @@
 <dict>
 	<key>SchemeUserState</key>
 	<dict>
-		<key>XHale.xcscheme_^#shared#^_</key>
+		<key>Promises (Playground).xcscheme</key>
 		<dict>
 			<key>orderHint</key>
+			<integer>1</integer>
+		</dict>
+		<key>XHale Health.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>isShown</key>
+			<true/>
+			<key>orderHint</key>
 			<integer>0</integer>
+		</dict>
+	</dict>
+	<key>SuppressBuildableAutocreation</key>
+	<dict>
+		<key>5547DD852D7B8CF100E561E8</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>5547DD952D7B8CF400E561E8</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>5547DD9F2D7B8CF400E561E8</key>
+		<dict>
+			<key>primary</key>
+			<true/>
 		</dict>
 	</dict>
 </dict>
