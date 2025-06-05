@@ -228,10 +228,11 @@ struct HomeView: View {
     @ViewBuilder
     private var connectedSection: some View {
         if let connected = bleManager.connectedPeripheral {
+            @AppStorage("sampleDuration") var sampleDuration: Int = 15
             NavigationLink(destination: BreathSampleView()
                                 .environmentObject(bleManager)
                                 .environmentObject(tutorial)) {
-                Text("Take 15‑Second Breath Sample")
+                                    Text("Take \(sampleDuration)-Second Breath Sample")
                     .padding()
                     .background(Color.orange.opacity(0.3))
                     .cornerRadius(8)
@@ -248,7 +249,7 @@ struct HomeView: View {
             .coachMark(
                 id: "breathSampleButton",
                 title: "Take a Breath Sample",
-                message: "Press here to start your 15‑second sample."
+                message: "Press here to start your \(sampleDuration)-second sample."
             )
 
             Text("Connected to \(connected.name ?? "Unknown")")

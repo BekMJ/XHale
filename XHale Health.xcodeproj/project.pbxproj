@@ -53,18 +53,18 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		5547DD862D7B8CF100E561E8 /* XHale.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = XHale.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5547DD862D7B8CF100E561E8 /* XHaleHealth.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = XHaleHealth.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5547DD962D7B8CF400E561E8 /* XHaleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = XHaleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5547DDA02D7B8CF400E561E8 /* XHaleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = XHaleUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		55EB183F2D8F5F94001927E7 /* Exceptions for "Resources" folder in "XHale" target */ = {
+		55EB183F2D8F5F94001927E7 /* Exceptions for "Resources" folder in "XHaleHealth" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			attributesByRelativePath = {
 				device.dae = ("--decompress", );
 			};
-			target = 5547DD852D7B8CF100E561E8 /* XHale */;
+			target = 5547DD852D7B8CF100E561E8 /* XHaleHealth */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -87,7 +87,7 @@
 		55EB183C2D8F5F13001927E7 /* Resources */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				55EB183F2D8F5F94001927E7 /* Exceptions for "Resources" folder in "XHale" target */,
+				55EB183F2D8F5F94001927E7 /* Exceptions for "Resources" folder in "XHaleHealth" target */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -159,7 +159,7 @@
 		5547DD872D7B8CF100E561E8 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				5547DD862D7B8CF100E561E8 /* XHale.app */,
+				5547DD862D7B8CF100E561E8 /* XHaleHealth.app */,
 				5547DD962D7B8CF400E561E8 /* XHaleTests.xctest */,
 				5547DDA02D7B8CF400E561E8 /* XHaleUITests.xctest */,
 			);
@@ -169,9 +169,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		5547DD852D7B8CF100E561E8 /* XHale */ = {
+		5547DD852D7B8CF100E561E8 /* XHaleHealth */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 5547DDAA2D7B8CF400E561E8 /* Build configuration list for PBXNativeTarget "XHale" */;
+			buildConfigurationList = 5547DDAA2D7B8CF400E561E8 /* Build configuration list for PBXNativeTarget "XHaleHealth" */;
 			buildPhases = (
 				5547DD822D7B8CF100E561E8 /* Sources */,
 				5547DD832D7B8CF100E561E8 /* Frameworks */,
@@ -185,7 +185,7 @@
 				5547DD882D7B8CF100E561E8 /* XHale */,
 				55EB183C2D8F5F13001927E7 /* Resources */,
 			);
-			name = XHale;
+			name = XHaleHealth;
 			packageProductDependencies = (
 				555883D12D9A630B00A12085 /* FirebaseAnalytics */,
 				555883D32D9A630B00A12085 /* FirebaseAnalyticsOnDeviceConversion */,
@@ -215,7 +215,7 @@
 				550EE8C62D9B21240067C221 /* GoogleSignInSwift */,
 			);
 			productName = XHale;
-			productReference = 5547DD862D7B8CF100E561E8 /* XHale.app */;
+			productReference = 5547DD862D7B8CF100E561E8 /* XHaleHealth.app */;
 			productType = "com.apple.product-type.application";
 		};
 		5547DD952D7B8CF400E561E8 /* XHaleTests */ = {
@@ -287,7 +287,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 5547DD812D7B8CF100E561E8 /* Build configuration list for PBXProject "XHale" */;
+			buildConfigurationList = 5547DD812D7B8CF100E561E8 /* Build configuration list for PBXProject "XHale Health" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -305,7 +305,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				5547DD852D7B8CF100E561E8 /* XHale */,
+				5547DD852D7B8CF100E561E8 /* XHaleHealth */,
 				5547DD952D7B8CF400E561E8 /* XHaleTests */,
 				5547DD9F2D7B8CF400E561E8 /* XHaleUITests */,
 			);
@@ -363,12 +363,12 @@
 /* Begin PBXTargetDependency section */
 		5547DD982D7B8CF400E561E8 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 5547DD852D7B8CF100E561E8 /* XHale */;
+			target = 5547DD852D7B8CF100E561E8 /* XHaleHealth */;
 			targetProxy = 5547DD972D7B8CF400E561E8 /* PBXContainerItemProxy */;
 		};
 		5547DDA22D7B8CF400E561E8 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 5547DD852D7B8CF100E561E8 /* XHale */;
+			target = 5547DD852D7B8CF100E561E8 /* XHaleHealth */;
 			targetProxy = 5547DDA12D7B8CF400E561E8 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -501,7 +501,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_ASSET_PATHS = "\"XHale/Preview Content\"";
 				DEVELOPMENT_TEAM = K7GWAFBUHV;
 				ENABLE_PREVIEWS = YES;
@@ -536,7 +536,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_ASSET_PATHS = "\"XHale/Preview Content\"";
 				DEVELOPMENT_TEAM = K7GWAFBUHV;
 				ENABLE_PREVIEWS = YES;
@@ -635,7 +635,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		5547DD812D7B8CF100E561E8 /* Build configuration list for PBXProject "XHale" */ = {
+		5547DD812D7B8CF100E561E8 /* Build configuration list for PBXProject "XHale Health" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				5547DDA82D7B8CF400E561E8 /* Debug */,
@@ -644,7 +644,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		5547DDAA2D7B8CF400E561E8 /* Build configuration list for PBXNativeTarget "XHale" */ = {
+		5547DDAA2D7B8CF400E561E8 /* Build configuration list for PBXNativeTarget "XHaleHealth" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				5547DDAB2D7B8CF400E561E8 /* Debug */,
