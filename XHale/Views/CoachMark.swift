@@ -31,9 +31,17 @@ struct CoachMark: ViewModifier {
           Text(title)
             .font(.headline)
             .foregroundColor(.white)
+            .shadow(color: .black.opacity(0.5), radius: 1, x: 0, y: 1)
+            .minimumScaleFactor(0.8)
+            .lineLimit(1)
+            .accessibilityLabel(title)
           Text(message)
-            .font(.subheadline)
+            .font(.body)
             .foregroundColor(.white)
+            .shadow(color: .black.opacity(0.5), radius: 1, x: 0, y: 1)
+            .minimumScaleFactor(0.8)
+            .lineLimit(1)
+            .accessibilityLabel(message)
         }
         .padding(8)
         .background(Color.black.opacity(0.8))
@@ -41,7 +49,7 @@ struct CoachMark: ViewModifier {
         // position it above the content
         .offset(y: -60)
         
-        // ③ “tap the real button” arrow
+        // ③ "tap the real button" arrow
         Image(systemName: "arrowtriangle.down.fill")
           .font(.system(size: 20))
           .foregroundColor(.yellow)

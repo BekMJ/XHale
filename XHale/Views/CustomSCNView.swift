@@ -42,6 +42,11 @@ class CustomSCNView: SCNView {
             )
             container.pivot = SCNMatrix4MakeTranslation(containerCenter.x, containerCenter.y, containerCenter.z)
             container.position = SCNVector3Zero
+            
+            // Add continuous rotation animation
+            let rotationAction = SCNAction.rotateBy(x: 0, y: 2 * .pi, z: 0, duration: 8.0)
+            let repeatAction = SCNAction.repeatForever(rotationAction)
+            container.runAction(repeatAction)
         }
     }
     

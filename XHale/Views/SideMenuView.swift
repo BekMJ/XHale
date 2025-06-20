@@ -19,9 +19,9 @@ struct SideMenuView: View {
             VStack(alignment: .leading, spacing: 32) {
                 // Title or Logo at the top
                 Text("Menu")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                    .accessibilityLabel("Main menu")
                     .padding(.top, 60)
 
                 // Navigation Links
@@ -53,24 +53,6 @@ struct SideMenuView: View {
                 )
 
                 Spacer()
-
-                // Log Out Button at bottom
-                Button {
-                    do {
-                        try Auth.auth().signOut()
-                    } catch {
-                        print("Error signing out: \(error.localizedDescription)")
-                    }
-                } label: {
-                    Label("Log Out", systemImage: "arrow.backward.square")
-                        .font(.headline)
-                        .foregroundColor(.red)
-                }
-                .padding(.leading, 20)
-                .simultaneousGesture(
-                    TapGesture().onEnded { isShowingMenu = false }
-                )
-                .padding(.bottom, 30)
             }
             .padding(.leading, 20)
             .padding(.top, 20)

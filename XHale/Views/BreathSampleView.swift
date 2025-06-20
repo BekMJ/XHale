@@ -33,7 +33,9 @@ struct BreathSampleView: View {
                 // Instructions
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Breath Sample Instructions:")
-                        .font(.title3).bold()
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                        .accessibilityLabel("Breath Sample Instructions")
                     Text("""
 • Hold the device in front of your mouth.
 • Blow steadily for \(totalTime) seconds.
@@ -268,84 +270,107 @@ struct BreathSampleView: View {
     // MARK: - Chart rendering
     @ViewBuilder
     private var chartView: some View {
-        // 1. counts & maxes
         let coCount   = bleManager.coData.count
         let tempCount = bleManager.temperatureData.count
         let coMax     = (bleManager.coData.max() ?? 0) * 1.1
-        let tempMax   = (bleManager.temperatureData.max() ?? 0) * 1.1
+        let tempMaxRaw = bleManager.temperatureData.max() ?? 0
+        let tempMin   = tempMaxRaw * 0.5
+        let tempMax   = tempMaxRaw * 1.5
 
-        // 2. CO positions: 0,1,2,…,coCount-1
         let coPositions: [Double] = bleManager.coData.indices.map { Double($0) }
-
-        // 3. Temp positions stretched to the same domain
         let tempPositions: [Double] = bleManager.temperatureData.indices.map { i in
-          guard tempCount > 1 else { return 0 }
-          return Double(i) * Double(coCount - 1) / Double(tempCount - 1)
+            guard tempCount > 1 else { return 0 }
+            return Double(i) * Double(coCount - 1) / Double(max(tempCount - 1, 1))
         }
 
-        // 4. scaled temps in CO-domain
-        let scaledTemps: [Double] = bleManager.temperatureData.map { t in
-          (t / tempMax) * coMax
-        }
-
-
-        Chart {
-          if showCO {
-            ForEach(Array(zip(coPositions, bleManager.coData)), id: \.0) { xPos, ppm in
-              PointMark(
-                x: .value("Sample", xPos),
-                y: .value("CO (ppm)", ppm)
-              )
-              .symbolSize(100)
-              .foregroundStyle(Color.orange)
+        ZStack {
+            if showCO {
+                COChartView(coPositions: coPositions, coData: bleManager.coData, coMax: coMax, coCount: coCount)
             }
-          }
-
-          if showTemperature {
-            ForEach(Array(zip(tempPositions, scaledTemps)), id: \.0) { xPos, scaledTemp in
-              PointMark(
-                x: .value("Sample", xPos),
-                y: .value("Temp (scaled)", scaledTemp)
-              )
-              .symbolSize(100)
-              .foregroundStyle(Color.red)
+            if showTemperature {
+                TemperatureChartView(tempPositions: tempPositions, temperatureData: bleManager.temperatureData, tempMin: tempMin, tempMax: tempMax, coCount: coCount)
             }
-          }
         }
-        .chartYScale(domain: 0...coMax)
-        .chartXScale(domain: 0...Double(max(coCount - 1, 0)))
-        .chartXAxis {
-          AxisMarks(values: .automatic) { _ in
-            AxisGridLine()
-            AxisTick()
-            AxisValueLabel()
-          }
-        }
-        .chartYAxis {
-          AxisMarks(position: .leading) { value in
-            AxisGridLine(); AxisTick()
-            AxisValueLabel {
-              if let v = value.as(Double.self) {
-                Text("\(Int(v)) ppm")
-              }
-            }
-          }
-        }
-        .chartYAxis {
-          AxisMarks(position: .trailing) { value in
-            AxisGridLine(); AxisTick()
-            AxisValueLabel {
-              if let v = value.as(Double.self) {
-                let temp = v / coMax * tempMax
-                Text("\(Int(temp)) °C")
-              }
-            }
-          }
-        }
-
     }
 
+    // MARK: - CO Chart Subview
+    private struct COChartView: View {
+        let coPositions: [Double]
+        let coData: [Double]
+        let coMax: Double
+        let coCount: Int
 
+        var body: some View {
+            let points = Array(zip(coPositions, coData))
+            Chart {
+                ForEach(points, id: \.0) { xPos, ppm in
+                    PointMark(
+                        x: .value("Sample", xPos),
+                        y: .value("CO (ppm)", ppm)
+                    )
+                    .symbolSize(100)
+                    .foregroundStyle(Color.orange)
+                }
+            }
+            .chartYScale(domain: 0...coMax)
+            .chartXScale(domain: 0...Double(max(coCount - 1, 0)))
+            .chartXAxis {
+                AxisMarks(values: .automatic) { _ in
+                    AxisGridLine()
+                    AxisTick()
+                    AxisValueLabel()
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading) { value in
+                    AxisGridLine(); AxisTick()
+                    AxisValueLabel {
+                        if let v = value.as(Double.self) {
+                            Text("\(Int(v)) ppm")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Temperature Chart Subview
+    private struct TemperatureChartView: View {
+        let tempPositions: [Double]
+        let temperatureData: [Double]
+        let tempMin: Double
+        let tempMax: Double
+        let coCount: Int
+
+        var body: some View {
+            let points = Array(zip(tempPositions, temperatureData))
+            Chart {
+                ForEach(points, id: \.0) { xPos, temp in
+                    PointMark(
+                        x: .value("Sample", xPos),
+                        y: .value("Temp (°C)", temp)
+                    )
+                    .symbolSize(100)
+                    .foregroundStyle(Color.red)
+                }
+            }
+            .chartYScale(domain: tempMin...tempMax)
+            .chartXScale(domain: 0...Double(max(coCount - 1, 0)))
+            .chartXAxis(.hidden) // Hide x-axis for overlay
+            .chartYAxis {
+                AxisMarks(position: .trailing) { value in
+                    AxisGridLine(); AxisTick()
+                    AxisValueLabel {
+                        if let v = value.as(Double.self) {
+                            Text("\(Int(v)) °C")
+                        }
+                    }
+                }
+            }
+            .background(Color.clear)
+            .allowsHitTesting(false) // Prevent overlay from blocking interaction
+        }
+    }
 
     // MARK: - CSV Export
 

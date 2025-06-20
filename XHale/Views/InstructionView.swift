@@ -20,9 +20,9 @@ struct InstructionView: View {
             ScrollView {
                 VStack(spacing: 2) {
                     Text("How to Use the Device")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                        .accessibilityLabel("How to Use the Device")
                     TransparentView()
                         .frame(width: 350, height: 350)
                     
@@ -35,7 +35,7 @@ struct InstructionView: View {
                         Text("Notice that the device does not have power off button, therefore just press disconnect button and the device will automatically turn off")
                     }
                     .font(.body)
-                    .foregroundColor(.white)
+                    .foregroundColor(.primary)
                     .padding()
                     .background(Color.black.opacity(0.3))
                     .cornerRadius(8)

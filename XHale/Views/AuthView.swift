@@ -21,6 +21,10 @@ struct AuthView: View {
     @AppStorage("savedEmail") private var savedEmail: String = ""
     @AppStorage("savedPassword") private var savedPassword: String = ""
     
+    @State private var showForgotPasswordAlert = false
+    @State private var forgotPasswordEmail: String = ""
+    @State private var forgotPasswordMessage: String? = nil
+    
     var body: some View {
         ZStack {
             // Static gradient background remains unchanged.
@@ -69,9 +73,11 @@ struct AuthView: View {
                         .padding(.top, 40)
                     
                     Text("Welcome")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                        .minimumScaleFactor(0.8)
+                        .lineLimit(1)
+                        .accessibilityLabel("Welcome to XHale")
                     
                     Picker(selection: $authMode, label: Text("Authentication Mode")) {
                         Text("Login").tag(AuthMode.login)
@@ -132,10 +138,30 @@ struct AuthView: View {
                     .transition(.move(edge: .leading).combined(with: .opacity))
                     
                     Button("Forgot Password?") {
-                        // Implement forgot password flow here
+                        if email.isEmpty {
+                            forgotPasswordMessage = "Please enter your email above first."
+                        } else {
+                            showForgotPasswordAlert = true
+                        }
                     }
                     .foregroundColor(Color.white.opacity(0.8))
                     .font(.footnote)
+                    .alert(isPresented: $showForgotPasswordAlert) {
+                        Alert(
+                            title: Text("Reset Password"),
+                            message: Text("Send a password reset link to \(email)?"),
+                            primaryButton: .default(Text("Send")) {
+                                sendPasswordReset()
+                            },
+                            secondaryButton: .cancel()
+                        )
+                    }
+                    if let forgotPasswordMessage = forgotPasswordMessage {
+                        Text(forgotPasswordMessage)
+                            .font(.caption)
+                            .foregroundColor(.green)
+                            .padding(.top, 4)
+                    }
                 }
                 .onAppear {
                     if rememberPassword {
@@ -185,6 +211,16 @@ struct AuthView: View {
                 withAnimation(.easeInOut(duration: 0.3)) {
                     isLoggedIn = true
                 }
+            }
+        }
+    }
+    
+    func sendPasswordReset() {
+        Auth.auth().sendPasswordReset(withEmail: email) { error in
+            if let error = error {
+                forgotPasswordMessage = error.localizedDescription
+            } else {
+                forgotPasswordMessage = "A password reset link has been sent to your email."
             }
         }
     }

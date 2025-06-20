@@ -24,8 +24,11 @@ struct CircularCountdownView: View {
 
             // Central countdown text
             Text("\(timeLeft)")
-                .font(.system(size: 48, weight: .bold, design: .monospaced))
-                .foregroundColor(.white)
+                .font(.body)
+                .foregroundColor(.primary)
+                .minimumScaleFactor(0.8)
+                .lineLimit(1)
+                .accessibilityLabel("Time left: \(timeLeft) seconds")
         }
         .frame(width: 150, height: 150)
         // smooth linear transition each second

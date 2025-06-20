@@ -37,8 +37,11 @@ struct RadarScanView: View {
 
             // Center label
             Text(label)
-                .font(.title2)
-                .foregroundColor(.white)
+                .font(.body)
+                .foregroundColor(.primary)
+                .minimumScaleFactor(0.8)
+                .lineLimit(1)
+                .accessibilityLabel(label)
         }
         .onAppear {
             animateWave = true

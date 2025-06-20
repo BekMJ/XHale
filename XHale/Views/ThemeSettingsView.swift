@@ -9,6 +9,11 @@ struct ThemeSettingsView: View {
             Picker("Select Theme", selection: $themeColor) {
                 ForEach(themes, id: \.self) { theme in
                     Text(theme)
+                        .font(.body)
+                        .foregroundColor(.primary)
+                        .minimumScaleFactor(0.8)
+                        .lineLimit(1)
+                        .accessibilityLabel(theme)
                 }
             }
         }

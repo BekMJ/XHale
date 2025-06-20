@@ -15,13 +15,18 @@ struct XHaleApp: App {
     @StateObject private var tutorial       = TutorialManager()
     @StateObject private var networkMonitor = NetworkMonitor()
     @StateObject private var bleManager     = BLEManager()
+    @StateObject private var session        = SessionStore()
 
     var body: some Scene {
         WindowGroup {
             NavigationView {
-                AuthView()
-
+                if session.currentUser != nil {
+                    HomeView()
+                } else {
+                    AuthView()
+                }
             }
+            .environmentObject(session)
             .environmentObject(networkMonitor)
             .environmentObject(bleManager)
             .environmentObject(tutorial)

@@ -37,8 +37,11 @@ struct FriendlyCountdownView: View {
             // 3) Center label
             VStack(spacing: 4) {
                 Text("\(timeLeft)")
-                    .font(.system(size: 48, weight: .bold, design: .monospaced))
-                    .foregroundColor(.white)
+                    .font(.body)
+                    .foregroundColor(.primary)
+                    .minimumScaleFactor(0.8)
+                    .lineLimit(1)
+                    .accessibilityLabel("Time left: \(timeLeft) seconds")
                 Text("seconds")
                     .font(.caption)
                     .foregroundColor(.white.opacity(0.8))

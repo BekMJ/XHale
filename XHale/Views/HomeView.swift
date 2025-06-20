@@ -6,6 +6,8 @@ struct HomeView: View {
     @EnvironmentObject var bleManager: BLEManager
     @EnvironmentObject private var tutorial: TutorialManager
 
+    @AppStorage("batteryStartTime") private var batteryStartTime: Double = Date().timeIntervalSince1970
+
     @State private var isShowingMenu = false
     private let menuWidth: CGFloat = 250
 
@@ -162,43 +164,63 @@ struct HomeView: View {
                                     tutorial.advance()
                                 }
                             } label: {
-                                VStack(alignment: .leading, spacing: 8) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    // Device name and connection status
                                     HStack {
                                         Text(peripheral.name ?? "Unknown Device")
-                                            .font(.headline)
-                                            .foregroundColor(.white)
+                                            .font(.body)
+                                            .foregroundColor(.primary)
+                                            .minimumScaleFactor(0.8)
+                                            .lineLimit(1)
+                                            .accessibilityLabel("Device name: \(peripheral.name ?? "Unknown Device")")
                                         Spacer()
-                                        if let sn = bleManager.deviceSerial {
-                                          Text((sn))
-                                            .font(.subheadline)
-                                            .foregroundColor(.white)
-                                        }
-                                        if let mac = bleManager.peripheralMACs[peripheral.identifier] {
-                                          Text(mac)
-                                            .font(.subheadline)
-                                            .foregroundColor(.gray)
-                                        }
                                         if bleManager.connectedPeripheral == peripheral {
                                             Text("Connected")
-                                                .font(.subheadline)
+                                                .font(.caption)
                                                 .foregroundColor(.green)
                                         }
-                                        if let mac = bleManager.peripheralMACs[peripheral.identifier],
-                                           let seconds = bleManager.connectionDurationsByMAC[mac] {
-                                          Text("\(Int(seconds))s")
-                                        }
-
                                     }
+                                    
+                                    // Device details in compact format
                                     if bleManager.connectedPeripheral == peripheral {
-                                        HStack(spacing: 16) {
-                                            Text("CO: \(bleManager.coData.last ?? 0.0, specifier: "%.2f") ppm")
-                                            Text("Temp: \(bleManager.temperatureData.last ?? 0.0, specifier: "%.2f") °C")
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            // Serial and MAC on same line
+                                            HStack {
+                                                if let sn = bleManager.deviceSerial {
+                                                    Text("SN: \(sn)")
+                                                        .font(.caption2)
+                                                        .foregroundColor(.white.opacity(0.8))
+                                                }
+                                                if let mac = bleManager.peripheralMACs[peripheral.identifier] {
+                                                    Text("MAC: \(mac)")
+                                                        .font(.caption2)
+                                                        .foregroundColor(.gray)
+                                                }
+                                                Spacer()
+                                                BatteryIconView(startTime: batteryStartTime)
+                                            }
+                                            
+                                            // CO and Temp on same line
+                                            HStack(spacing: 16) {
+                                                Text("CO: \(bleManager.coData.last ?? 0.0, specifier: "%.2f") ppm")
+                                                    .font(.caption2)
+                                                    .foregroundColor(.white)
+                                                Text("Temp: \(bleManager.temperatureData.last ?? 0.0, specifier: "%.2f") °C")
+                                                    .font(.caption2)
+                                                    .foregroundColor(.white)
+                                            }
                                         }
-                                        .font(.subheadline)
-                                        .foregroundColor(.white)
+                                    } else {
+                                        // Show MAC for unconnected devices
+                                        if let mac = bleManager.peripheralMACs[peripheral.identifier] {
+                                            Text("MAC: \(mac)")
+                                                .font(.caption2)
+                                                .foregroundColor(.gray)
+                                        }
                                     }
                                 }
-                                .padding()
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
                                 .background(Color.black.opacity(0.3))
                                 .cornerRadius(8)
                             }
