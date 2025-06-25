@@ -5,6 +5,7 @@ import FirebaseAuth
 // MARK: - SideMenuView
 struct SideMenuView: View {
     @Binding var isShowingMenu: Bool
+    @EnvironmentObject var session: SessionStore
 
     var body: some View {
         ZStack {
@@ -53,6 +54,16 @@ struct SideMenuView: View {
                 )
 
                 Spacer()
+                
+                // Logout Button
+                Button(action: {
+                    session.signOut()
+                    isShowingMenu = false
+                }) {
+                    Label("Logout", systemImage: "rectangle.portrait.and.arrow.right")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                }
             }
             .padding(.leading, 20)
             .padding(.top, 20)

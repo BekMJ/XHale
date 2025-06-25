@@ -13,6 +13,7 @@ class BLEManager: NSObject, ObservableObject {
     /// How long each device has been connected
     @Published var connectionDurations: [UUID: TimeInterval] = [:]
 
+    @Published var bluetoothState: CBManagerState = .unknown
 
     // MARK: - Sensor Data Arrays
     @Published var temperatureData: [Double] = []
@@ -98,11 +99,11 @@ class BLEManager: NSObject, ObservableObject {
 
     // MARK: - Firestore Upload
     /// Uploads one temperature+CO reading, tagged by device MAC.
-    /// Upload one temperature+CO reading into a per-MAC “readings” subcollection.
+    /// Upload one temperature+CO reading into a per-MAC "readings" subcollection.
     func uploadSensorData(mac: String, temperature: Double, co: Double) {
         guard let uid = Auth.auth().currentUser?.uid else { return }
 
-        // 1) Reference the “readings” subcollection under the MAC‐named doc
+        // 1) Reference the "readings" subcollection under the MAC-named doc
         let readingsRef = Firestore.firestore()
             .collection("users")
             .document(uid)
@@ -127,6 +128,7 @@ class BLEManager: NSObject, ObservableObject {
 // MARK: - CBCentralManagerDelegate
 extension BLEManager: CBCentralManagerDelegate {
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        bluetoothState = central.state
         guard central.state == .poweredOn else {
             isScanning = false
             return
@@ -159,7 +161,7 @@ extension BLEManager: CBCentralManagerDelegate {
 
     func centralManager(_ central: CBCentralManager,
                         didConnect peripheral: CBPeripheral) {
-        // Stop scanning once we’ve connected
+        // Stop scanning once we've connected
         stopScanning()
 
         // Keep track of our connected peripheral
@@ -267,7 +269,7 @@ extension BLEManager: CBCentralManagerDelegate {
         // 4) Remove from discovered list
         discoveredPeripherals.removeAll { $0.identifier == uuid }
 
-        // 5) Accumulate this session locally (MAC‐keyed)
+        // 5) Accumulate this session locally (MAC-keyed)
         if let start = connectionStartDatesByMAC[mac] {
             let base    = cumulativeDurationsByMAC[mac] ?? 0
             let session = Date().timeIntervalSince(start)

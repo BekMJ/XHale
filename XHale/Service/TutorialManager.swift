@@ -16,17 +16,17 @@ final class TutorialManager: ObservableObject {
         // Step 1: Power on the device (no specific anchor)
         .init(anchorID: nil,
               title: "Power On",
-              message: "Press the Bluetooth button on your XHale device to turn it on."),
+              message: "Press the Bluetooth button on your XHale Health device to turn it on."),
 
         // Step 2: Scan for peripherals
         .init(anchorID: "scanButton",
               title: "Start Scan",
               message: "Tap here to begin scanning."),
 
-        // Step 3: Choose your XHale device
+        // Step 3: Choose your XHale Health device
         .init(anchorID: "xHaleItem",
-              title: "Choose Device",
-              message: "Tap on \"XHale\" to connect."),
+              title: "Choose Your Device",
+              message: "Tap on \"XHale Health\" to connect."),
 
         // Step 4: Navigate to sampling screen
         .init(anchorID: "breathSampleButton",
@@ -36,7 +36,7 @@ final class TutorialManager: ObservableObject {
         // Step 5: Position the device
         .init(anchorID: nil,
               title: "Position Device",
-              message: "Hold your XHale device in front of your mouth as shown."),
+              message: "Hold your XHale Health device in front of your mouth as shown."),
 
         // Step 6: Begin the sample countdown
         .init(anchorID: "startSampleButton",

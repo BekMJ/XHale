@@ -269,7 +269,7 @@ struct SettingsView: View {
 // MARK: - Battery Icon View
 struct BatteryIconView: View {
     let startTime: Double
-    private let maxBatteryHours: Double = 170.0 // 170 hours max battery life
+    private let maxBatteryHours: Double = 136.0 // 80% of 170 hours (136 hours) to account for battery degradation
     
     private var batteryLevel: Double {
         let currentTime = Date().timeIntervalSince1970

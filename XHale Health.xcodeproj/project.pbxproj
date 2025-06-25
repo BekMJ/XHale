@@ -510,8 +510,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "XHale Health";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
-				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "This app uses Bluetooth to discover and connect to your XHale sensor so you can perform a 15-second breath sample and receive real-time carbon monoxide (CO) and temperature readings";
-				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "This app uses Bluetooth to discover and connect to your XHale sensor so you can perform a 15-second breath sample and receive real-time carbon monoxide (CO) and temperature readings";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "This app uses Bluetooth to discover and connect to your Carbon Monoxide sensor so you can receive real-time carbon monoxide (CO) and temperature readings";
+				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "This app uses Bluetooth to discover and connect to the Carbon Monoxide sensor so you can receive real-time carbon monoxide (CO) and temperature readings";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -545,8 +545,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "XHale Health";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
-				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "This app uses Bluetooth to discover and connect to your XHale sensor so you can perform a 15-second breath sample and receive real-time carbon monoxide (CO) and temperature readings";
-				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "This app uses Bluetooth to discover and connect to your XHale sensor so you can perform a 15-second breath sample and receive real-time carbon monoxide (CO) and temperature readings";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "This app uses Bluetooth to discover and connect to your Carbon Monoxide sensor so you can receive real-time carbon monoxide (CO) and temperature readings";
+				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "This app uses Bluetooth to discover and connect to the Carbon Monoxide sensor so you can receive real-time carbon monoxide (CO) and temperature readings";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

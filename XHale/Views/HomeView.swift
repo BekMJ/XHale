@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreBluetooth
+import UIKit
 
 // MARK: - HomeView
 struct HomeView: View {
@@ -7,9 +8,15 @@ struct HomeView: View {
     @EnvironmentObject private var tutorial: TutorialManager
 
     @AppStorage("batteryStartTime") private var batteryStartTime: Double = Date().timeIntervalSince1970
+    @AppStorage("disclaimerAccepted") private var disclaimerAccepted: Bool = false
+    @State private var showDisclaimer: Bool = false
 
     @State private var isShowingMenu = false
     private let menuWidth: CGFloat = 250
+
+    @State private var showBluetoothAlert: Bool = false
+    @State private var bluetoothAlertMessage: String = ""
+    @State private var lastBluetoothState: CBManagerState = .unknown
 
     var body: some View {
         ZStack(alignment: .leading) {
@@ -19,41 +26,46 @@ struct HomeView: View {
                 .animation(.easeInOut, value: isShowingMenu)
         }
         .navigationBarHidden(true)
-        .overlay(
-          Group {
-            if tutorial.isActive && tutorial.currentStep.anchorID == nil {
-              VStack(spacing: 16) {
-                // ← Your popup image
-
-                Text(tutorial.currentStep.title)
-                  .font(.largeTitle)
-                  .foregroundColor(.white)
-
-                Text(tutorial.currentStep.message)
-                  .multilineTextAlignment(.center)
-                  .foregroundColor(.white)
-                  .padding(.horizontal)
-
-                Button("Next") {
-                  tutorial.advance()
-                }
-                .padding()
-                .background(Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(8)
-                  Image("Step1")       // <-- add this
-                    .resizable()                  // make it scale
-                    .scaledToFit()                // keep aspect ratio
-                    .frame(width: 200, height: 200)
-                    .shadow(radius: 10)
-              }
-              .padding() // give some breathing room
-              .frame(maxWidth: .infinity, maxHeight: .infinity)
-              .background(Color.black.opacity(0.6))
+        .overlay(tutorialOverlay)
+        .sheet(isPresented: $showDisclaimer) {
+            disclaimerSheet
+        }
+        .onAppear {
+            // Show disclaimer only if not accepted and not already showing
+            if !disclaimerAccepted && !showDisclaimer {
+                showDisclaimer = true
             }
-          }
-        )
-
+        }
+        .onReceive(bleManager.$bluetoothState) { state in
+            // Only show alert if state changed to a problematic state and we're not already showing an alert
+            if (state == .poweredOff || state == .unauthorized) && !showBluetoothAlert && lastBluetoothState != state {
+                if state == .poweredOff {
+                    bluetoothAlertMessage = "Bluetooth is currently turned off. Please turn on Bluetooth in Control Center or Settings to use this app.\n\nThis app uses Bluetooth to discover and connect to the Carbon Monoxide sensor so you can receive real-time carbon monoxide (CO) and temperature readings."
+                } else if state == .unauthorized {
+                    bluetoothAlertMessage = "Bluetooth access is currently denied. Please enable Bluetooth permissions for this app in Settings.\n\nThis app uses Bluetooth to discover and connect to the Carbon Monoxide sensor so you can receive real-time carbon monoxide (CO) and temperature readings."
+                }
+                showBluetoothAlert = true
+            }
+            
+            // Hide alert if Bluetooth state becomes valid
+            if (state == .poweredOn || state == .resetting) && showBluetoothAlert {
+                showBluetoothAlert = false
+            }
+            
+            lastBluetoothState = state
+        }
+        .alert("Bluetooth Required", isPresented: $showBluetoothAlert) {
+            if bleManager.bluetoothState == .unauthorized {
+                Button("Open Settings") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                }
+            }
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(bluetoothAlertMessage)
+        }
     }
 
     // MARK: - Side Menu
@@ -124,6 +136,18 @@ struct HomeView: View {
     // MARK: - Scan Button
     private var scanButtonSection: some View {
         Button {
+            // Check Bluetooth state before scanning
+            if bleManager.bluetoothState == .poweredOff {
+                bluetoothAlertMessage = "Bluetooth is currently turned off. Please turn on Bluetooth in Control Center or Settings to use this app.\n\nThis app uses Bluetooth to discover and connect to the Carbon Monoxide sensor so you can receive real-time carbon monoxide (CO) and temperature readings."
+                showBluetoothAlert = true
+                return
+            } else if bleManager.bluetoothState == .unauthorized {
+                bluetoothAlertMessage = "Bluetooth access is currently denied. Please enable Bluetooth permissions for this app in Settings.\n\nThis app uses Bluetooth to discover and connect to the Carbon Monoxide sensor so you can receive real-time carbon monoxide (CO) and temperature readings."
+                showBluetoothAlert = true
+                return
+            }
+            
+            // If Bluetooth is available, proceed with scanning
             if bleManager.isScanning { bleManager.stopScanning() }
             else { bleManager.startScanning() }
             if tutorial.isActive && tutorial.currentStep.anchorID == "scanButton" {
@@ -156,7 +180,7 @@ struct HomeView: View {
         } else {
             ScrollViewReader { proxy in
                 ScrollView {
-                    LazyVStack(spacing: 12) {
+                    LazyVStack(spacing: 8) {
                         ForEach(bleManager.discoveredPeripherals, id: \.identifier) { peripheral in
                             Button {
                                 bleManager.connect(peripheral)
@@ -164,12 +188,12 @@ struct HomeView: View {
                                     tutorial.advance()
                                 }
                             } label: {
-                                VStack(alignment: .leading, spacing: 4) {
+                                VStack(alignment: .leading, spacing: 2) {
                                     // Device name and connection status
                                     HStack {
                                         Text(peripheral.name ?? "Unknown Device")
-                                            .font(.body)
-                                            .foregroundColor(.primary)
+                                            .font(.headline)
+                                            .foregroundColor(.white)
                                             .minimumScaleFactor(0.8)
                                             .lineLimit(1)
                                             .accessibilityLabel("Device name: \(peripheral.name ?? "Unknown Device")")
@@ -183,7 +207,7 @@ struct HomeView: View {
                                     
                                     // Device details in compact format
                                     if bleManager.connectedPeripheral == peripheral {
-                                        VStack(alignment: .leading, spacing: 2) {
+                                        VStack(alignment: .leading, spacing: 1) {
                                             // Serial and MAC on same line
                                             HStack {
                                                 if let sn = bleManager.deviceSerial {
@@ -194,7 +218,7 @@ struct HomeView: View {
                                                 if let mac = bleManager.peripheralMACs[peripheral.identifier] {
                                                     Text("MAC: \(mac)")
                                                         .font(.caption2)
-                                                        .foregroundColor(.gray)
+                                                        .foregroundColor(.white)
                                                 }
                                                 Spacer()
                                                 BatteryIconView(startTime: batteryStartTime)
@@ -215,12 +239,12 @@ struct HomeView: View {
                                         if let mac = bleManager.peripheralMACs[peripheral.identifier] {
                                             Text("MAC: \(mac)")
                                                 .font(.caption2)
-                                                .foregroundColor(.gray)
+                                                .foregroundColor(.white)
                                         }
                                     }
                                 }
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
                                 .background(Color.black.opacity(0.3))
                                 .cornerRadius(8)
                             }
@@ -228,16 +252,17 @@ struct HomeView: View {
                             .coachMark(
                                 id: "xHaleItem",
                                 title: "Choose Your Device",
-                                message: "Tap on \"XHale\" in the list to connect."
+                                message: "Tap on \"XHale Health\" in the list to connect."
                             )
                         }
                     }
                     .padding(.horizontal)
                 }
+                .frame(maxHeight: 120)
                 .onChange(of: tutorial.currentStep.anchorID) { id in
                     if id == "xHaleItem" {
-                        // Scroll to the first matching XHale peripheral
-                        if let target = bleManager.discoveredPeripherals.first(where: { $0.name == "XHale" }) {
+                        // Scroll to the first matching XHale Health peripheral
+                        if let target = bleManager.discoveredPeripherals.first(where: { $0.name == "XHale Health" }) {
                             proxy.scrollTo(target.identifier, anchor: .center)
                         }
                     }
@@ -285,5 +310,70 @@ struct HomeView: View {
             .cornerRadius(8)
             .foregroundColor(.white)
         }
+    }
+
+    // MARK: - Tutorial Overlay
+    @ViewBuilder
+    private var tutorialOverlay: some View {
+        if tutorial.isActive && tutorial.currentStep.anchorID == nil {
+            VStack(spacing: 16) {
+                Image("Step5")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 200, height: 200)
+                    .shadow(radius: 10)
+
+                Text(tutorial.currentStep.title)
+                    .font(.largeTitle)
+                    .foregroundColor(.white)
+
+                Text(tutorial.currentStep.message)
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(.white)
+                    .padding(.horizontal)
+
+                Button("Next") {
+                    tutorial.advance()
+                }
+                .padding()
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(8)
+            }
+            .padding()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.black.opacity(0.6))
+        }
+    }
+
+    // MARK: - Disclaimer Sheet
+    private var disclaimerSheet: some View {
+        VStack(spacing: 24) {
+            Text("Disclaimer")
+                .font(.title2)
+                .bold()
+                .padding(.top)
+            ScrollView {
+                Text("This app is intended for informational and wellness purposes only. It is not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition.")
+                    .font(.body)
+                    .multilineTextAlignment(.center)
+                    .padding()
+            }
+            Button(action: { 
+                disclaimerAccepted = true
+                showDisclaimer = false
+            }) {
+                Text("I Understand")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color.blue)
+                    .cornerRadius(10)
+            }
+            .padding(.horizontal)
+            Spacer()
+        }
+        .presentationDetents([.medium, .large])
     }
 }

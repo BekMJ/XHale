@@ -77,7 +77,7 @@ struct AuthView: View {
                         .foregroundColor(.primary)
                         .minimumScaleFactor(0.8)
                         .lineLimit(1)
-                        .accessibilityLabel("Welcome to XHale")
+                        .accessibilityLabel("Welcome to XHale Health")
                     
                     Picker(selection: $authMode, label: Text("Authentication Mode")) {
                         Text("Login").tag(AuthMode.login)
@@ -108,7 +108,7 @@ struct AuthView: View {
                         
                         Toggle("Remember Password", isOn: $rememberPassword)
                             .padding(.horizontal)
-                            .foregroundColor(.white)
+                            .foregroundColor(.primary)
                         
                         if let errorMessage = errorMessage {
                             Text(errorMessage).foregroundColor(.red)

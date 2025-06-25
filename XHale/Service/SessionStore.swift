@@ -19,6 +19,7 @@ class SessionStore: ObservableObject {
         do {
             try Auth.auth().signOut()
             self.currentUser = nil
+            // Note: We don't reset disclaimerAccepted here so it persists across sessions
         } catch {
             print("Error signing out: \(error.localizedDescription)")
         }

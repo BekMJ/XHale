@@ -304,12 +304,12 @@ struct BreathSampleView: View {
             let points = Array(zip(coPositions, coData))
             Chart {
                 ForEach(points, id: \.0) { xPos, ppm in
-                    PointMark(
+                    LineMark(
                         x: .value("Sample", xPos),
                         y: .value("CO (ppm)", ppm)
                     )
-                    .symbolSize(100)
                     .foregroundStyle(Color.orange)
+                    .lineStyle(StrokeStyle(lineWidth: 3))
                 }
             }
             .chartYScale(domain: 0...coMax)
@@ -319,6 +319,7 @@ struct BreathSampleView: View {
                     AxisGridLine()
                     AxisTick()
                     AxisValueLabel()
+                    .foregroundStyle(.white)
                 }
             }
             .chartYAxis {
@@ -327,6 +328,7 @@ struct BreathSampleView: View {
                     AxisValueLabel {
                         if let v = value.as(Double.self) {
                             Text("\(Int(v)) ppm")
+                            .foregroundStyle(.white)
                         }
                     }
                 }
@@ -346,12 +348,12 @@ struct BreathSampleView: View {
             let points = Array(zip(tempPositions, temperatureData))
             Chart {
                 ForEach(points, id: \.0) { xPos, temp in
-                    PointMark(
+                    LineMark(
                         x: .value("Sample", xPos),
                         y: .value("Temp (°C)", temp)
                     )
-                    .symbolSize(100)
                     .foregroundStyle(Color.red)
+                    .lineStyle(StrokeStyle(lineWidth: 3))
                 }
             }
             .chartYScale(domain: tempMin...tempMax)
@@ -363,6 +365,7 @@ struct BreathSampleView: View {
                     AxisValueLabel {
                         if let v = value.as(Double.self) {
                             Text("\(Int(v)) °C")
+                            .foregroundStyle(.white)
                         }
                     }
                 }

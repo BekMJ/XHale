@@ -4,7 +4,7 @@ struct PrivacyPolicyView: View {
     var body: some View {
         ScrollView {
             Text("""
-Privacy Policy for XHale-Health
+Privacy Policy for XHale Health
 
 Privacy Policy
 Last updated: June 16, 2025
@@ -24,9 +24,9 @@ Account means a unique account created for You to access our Service or parts of
 
 Affiliate means an entity that controls, is controlled by or is under common control with a party, where \"control\" means ownership of 50% or more of the shares, equity interest or other securities entitled to vote for election of directors or other managing authority.
 
-Application refers to XHale-Health, the software program provided by the Company.
+Application refers to XHale Health, the software program provided by the Company.
 
-Company (referred to as either \"the Company\", \"We\", \"Us\" or \"Our\" in this Agreement) refers to XHale-Health.
+Company (referred to as either \"the Company\", \"We\", \"Us\" or \"Our\" in this Agreement) refers to XHale Health.
 
 Country refers to: Oklahoma, United States
 

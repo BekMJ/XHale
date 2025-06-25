@@ -28,7 +28,7 @@ struct InstructionView: View {
                     
                     VStack(alignment: .leading, spacing: 8) {
                         Text("• Press the reset button located on the front of the device before starting to scan")
-                        Text("• The Bluetooth device is named XHale")
+                        Text("• The Bluetooth device is named XHale Health")
                         Text("• Keep the device within Bluetooth range.")
                         Text("• Once connected to your phone, you can start receiving the data")
                         Text("• When using the breath sample make sure to breathe deeply into the device for 15 seconds")
