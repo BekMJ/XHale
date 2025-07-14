@@ -98,3 +98,11 @@ For issues, feature requests, or contributions, please open an issue or pull req
 
 ## License
 This project is for research and educational use. For licensing or commercial inquiries, contact the project maintainers.
+
+## Screenshots
+
+![Home Screen](XHale/Resources/Images/Simulator%20Screenshot%20-%20iPhone%2016%20Pro%20Max%20-%202025-06-25%20at%2010.52.56.png)
+*Home screen of XHale Health app on iPhone 16 Pro Max*
+
+![Breath Sample Screen](XHale/Resources/Images/Simulator%20Screenshot%20-%20iPhone%2016%20Pro%20Max%20-%202025-06-25%20at%2010.52.29.png)
+*Breath sample workflow on iPhone 16 Pro Max*
