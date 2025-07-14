@@ -101,8 +101,8 @@ This project is for research and educational use. For licensing or commercial in
 
 ## Screenshots
 
-![Home Screen](XHale/Resources/Images/sim1.png)
+![Home Screen](Resources/Images/sim1.png)
 *Home screen of XHale Health app on iPhone 16 Pro Max*
 
-![Breath Sample Screen](XHale/Resources/Images/sim2.png)
+![Breath Sample Screen](Resources/Images/sim2.png)
 *Breath sample workflow on iPhone 16 Pro Max*
