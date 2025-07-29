@@ -6,8 +6,16 @@ import FirebaseAuth
 
 class BLEManager: NSObject, ObservableObject {
     // MARK: - Published Properties
-    @Published var discoveredPeripherals: [CBPeripheral] = []
-    @Published var connectedPeripheral: CBPeripheral?
+    @Published var discoveredPeripherals: [CBPeripheral] = [] {
+        didSet {
+            print("🔍 Discovered peripherals count: \(discoveredPeripherals.count)")
+        }
+    }
+    @Published var connectedPeripheral: CBPeripheral? {
+        didSet {
+            print("📱 Connected peripheral changed: \(connectedPeripheral?.name ?? "nil")")
+        }
+    }
     @Published var isScanning: Bool = false
 
     /// How long each device has been connected
@@ -71,7 +79,19 @@ class BLEManager: NSObject, ObservableObject {
     }
     func disconnect() {
         if let p = connectedPeripheral {
+            print("🔌 Disconnecting from peripheral: \(p.name ?? "Unknown")")
+            print("📱 Available MACs: \(peripheralMACs)")
+            // Immediately clear connection state for UI responsiveness
+            connectedPeripheral = nil
+            deviceSerial = nil
+            // Stop sampling if active
+            stopSampling()
+            // Remove from discovered list immediately since device goes to sleep
+            discoveredPeripherals.removeAll { $0.identifier == p.identifier }
+            // Cancel the peripheral connection
             centralManager.cancelPeripheralConnection(p)
+        } else {
+            print("⚠️ No peripheral to disconnect")
         }
     }
 
@@ -154,6 +174,7 @@ extension BLEManager: CBCentralManagerDelegate {
             .joined(separator: ":")
           DispatchQueue.main.async {
             self.peripheralMACs[peripheral.identifier] = macString
+            print("📱 Stored MAC \(macString) for peripheral \(peripheral.name ?? "Unknown")")
           }
         }
     }
@@ -247,6 +268,11 @@ extension BLEManager: CBCentralManagerDelegate {
     func centralManager(_ central: CBCentralManager,
                         didDisconnectPeripheral peripheral: CBPeripheral,
                         error: Error?) {
+        print("🔌 Did disconnect peripheral: \(peripheral.name ?? "Unknown")")
+        if let error = error {
+            print("❌ Disconnect error: \(error.localizedDescription)")
+        }
+        
         // 1) Look up the MAC address we stored during discovery
         let uuid = peripheral.identifier
         guard let mac = peripheralMACs[uuid] else {
@@ -260,13 +286,13 @@ extension BLEManager: CBCentralManagerDelegate {
             timerListenersByMAC.removeValue(forKey: mac)
         }
 
-        // 3) Clear connection state
+        // 3) Clear connection state (only if not already cleared by disconnect())
         if connectedPeripheral == peripheral {
             deviceSerial = nil
             connectedPeripheral = nil
         }
 
-        // 4) Remove from discovered list
+        // 4) Remove from discovered list (only if not already removed by disconnect())
         discoveredPeripherals.removeAll { $0.identifier == uuid }
 
         // 5) Accumulate this session locally (MAC-keyed)
